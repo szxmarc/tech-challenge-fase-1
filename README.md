@@ -28,9 +28,6 @@ tech_challenge_previsao_churn/
 │   │   └── Telco-Customer-Churn.csv
 │   └── processed/                              # Dados processados
 │       ├── baseline/                           # Dados dos modelos baseline
-│       ├── random_forest/                      # Dados para Random Forest
-│       ├── xgboost/                            # Dados para XGBoost
-│       └── neural_network/                     # Dados para Redes Neurais
 │
 ├── models/                                     # Modelos treinados
 │   ├── baseline/                               # Modelos baseline
@@ -54,8 +51,6 @@ tech_challenge_previsao_churn/
 ├── .gitignore                                  # Arquivos ignorados pelo Git
 └── README.md                                   # Este arquivo
 ```
-
-**Nota:** Ver `PROJECT_STRUCTURE.md` para documentação detalhada da estrutura e convenções de nomenclatura.
 
 ## 🚀 Etapas de Desenvolvimento
 
@@ -338,8 +333,6 @@ with mlflow.start_run(run_name="random_forest_exp_001"):
 
 ## 📚 Documentação Adicional
 
-- **`PROJECT_STRUCTURE.md`**: Documentação completa da estrutura e motivações
-- **`docs/MELHORIAS_APLICADAS.md`**: Registro de todas as melhorias aplicadas
 - **Notebooks**: Cada notebook contém documentação detalhada inline
 
 ---
