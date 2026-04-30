@@ -1,33 +1,17 @@
 """
-Módulo de Dados (Data)
-======================
+Módulo de dados — carregamento e processamento.
 
-Propósito:
-----------
-Agrupar todas as funções relacionadas a CARREGAMENTO e MANIPULAÇÃO de dados.
-Centraliza lógica de pré-processamento para reutilização entre notebooks.
-
-Submódulos:
-- loader.py: Carregamento e leitura de dados
-- preprocessor.py: Transformações e limpeza
-
-Uso:
-----
-from src.data import load_raw_data, handle_missing_values, encode_features
+Responsabilidades:
+  loader.py    Leitura do dataset bruto e dos dados processados
+  processor.py Encoding de variáveis categóricas, split e escalonamento
 """
 
 from .loader import load_raw_data
-from .preprocessor import (
-    handle_missing_values,
-    encode_features,
-    split_and_scale_data,
-    save_processed_data,
-)
+from .processor import encode_features, save_processed_data, split_and_scale_data
 
 __all__ = [
-    'load_raw_data',
-    'handle_missing_values',
-    'encode_features',
-    'split_and_scale_data',
-    'save_processed_data',
+    "load_raw_data",
+    "encode_features",
+    "split_and_scale_data",
+    "save_processed_data",
 ]

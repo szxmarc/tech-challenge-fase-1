@@ -1,16 +1,10 @@
 """
-🤖 MÓDULO MODELS - Treinamento e Persistência
+Módulo de modelos — treinamento e persistência.
 
-Responsabilidade: Encapsular lógica de treinamento, validação e
-persistência de modelos.
-
-Arquivo Principal:
-- trainer.py: Funções de treinamento e salvamento de modelos
-
-Exemplo de uso:
-    from src.models.trainer import train_logistic_regression, save_model, load_model
+Pacotes internos:
+- trainer.py: treinar, salvar e carregar o modelo de regressão logística
 """
 
-from .trainer import train_logistic_regression, save_model, load_model
+from .trainer import load_model, save_model, train_logistic_regression
 
 __all__ = ["train_logistic_regression", "save_model", "load_model"]

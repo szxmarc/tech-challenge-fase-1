@@ -1,16 +1,10 @@
 """
-🛠️ MÓDULO UTILS - Utilitários Gerais
+Módulo de utilitários — funções auxiliares genéricas.
 
-Responsabilidade: Funções auxiliares pequenas que não se encaixam
-em nenhuma categoria específica.
-
-Arquivo Principal:
-- helpers.py: Funções auxiliares (criar diretórios, logging, manipulação JSON, etc)
-
-Exemplo de uso:
-    from src.utils.helpers import create_directories, log_experiment, save_json, load_json
+Responsabilidades:
+  helpers.py  Criação de diretórios, serialização JSON e registro de experimentos
 """
 
-from .helpers import create_directories, log_experiment, save_json, load_json
+from .helpers import create_directories, load_json, log_experiment, save_json
 
 __all__ = ["create_directories", "log_experiment", "save_json", "load_json"]

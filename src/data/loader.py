@@ -1,97 +1,71 @@
 """
-Módulo de Carregamento de Dados (Data Loader)
-==============================================
+Carregamento de dados.
 
-Propósito:
-----------
-Funções para CARREGAR dados de várias fontes (CSV, JSON, etc.).
-Centraliza lógica de leitura com tratamento de erros e validações.
-
-Funções:
-- load_raw_data(): Carrega dataset bruto do arquivo CSV
-- load_processed_data(): Carrega dados já processados (treino/teste/scaler)
-
-Razão de existência:
-- Evita código duplicado de leitura em vários notebooks
-- Facilita mudar fonte de dados sem alterar múltiplos arquivos
-- Padroniza validações (ex: verificar se arquivo existe)
-
-Exemplo de uso em notebook:
-    from src.data import load_raw_data
-    df = load_raw_data()
-    print(df.shape)  # (7043, 21)
+Funções para leitura do dataset bruto e dos dados processados.
+Usado em notebooks de treinamento — não é chamado pela API em tempo de execução.
 """
 
-import pandas as pd
-from pathlib import Path
-from src.config import RAW_DATASET, X_TRAIN_FILE, X_TEST_FILE, Y_TRAIN_FILE, Y_TEST_FILE, SCALER_FILE
+import logging
+
 import joblib
+import pandas as pd
+
+from src.config.settings import (
+    RAW_DATASET,
+    SCALER_FILE,
+    X_TEST_FILE,
+    X_TRAIN_FILE,
+    Y_TEST_FILE,
+    Y_TRAIN_FILE,
+)
+
+logger = logging.getLogger(__name__)
 
 
-def load_raw_data(filepath=None):
+def load_raw_data(filepath=None) -> pd.DataFrame:
     """
-    Carrega o dataset bruto.
-    
-    Parâmetros:
-    -----------
-    filepath : str or Path, optional
-        Caminho para arquivo CSV. Se None, usa RAW_DATASET de config.
-    
-    Retornos:
-    ---------
-    pd.DataFrame
-        Dataset carregado com shape (7043, 21)
-    
+    Carrega o dataset bruto a partir de um CSV.
+
+    Args:
+        filepath: Caminho alternativo para o arquivo. Se None, usa RAW_DATASET de settings.
+
+    Returns:
+        DataFrame com os dados brutos.
+
     Raises:
-    -------
-    FileNotFoundError
-        Se arquivo não existe
-    
-    Exemplo:
-        df = load_raw_data()
-        df = load_raw_data("../data/raw/custom_data.csv")
+        FileNotFoundError: Se o arquivo não existir.
     """
-    if filepath is None:
-        filepath = RAW_DATASET
-    else:
-        filepath = Path(filepath)
-    
-    if not filepath.exists():
-        raise FileNotFoundError(f"Dataset não encontrado em: {filepath}")
-    
-    print(f"Carregando dataset de: {filepath}")
-    df = pd.read_csv(filepath)
-    print(f"Dataset carregado: {df.shape[0]} linhas × {df.shape[1]} colunas")
-    
+    from pathlib import Path
+
+    target = Path(filepath) if filepath else RAW_DATASET
+
+    if not target.exists():
+        raise FileNotFoundError(f"Dataset não encontrado em: {target}")
+
+    df = pd.read_csv(target)
+    logger.info("Dataset carregado: %d linhas × %d colunas", df.shape[0], df.shape[1])
     return df
 
 
-def load_processed_data():
+def load_processed_data() -> tuple:
     """
-    Carrega dados JÁ PROCESSADOS (output de 01_prepare_data.ipynb).
-    
-    Carrega:
-    - X_train, X_test, y_train, y_test (já padronizados)
-    - scaler (StandardScaler fit no treino)
-    
-    Uso em 02_train_logistic_regression.ipynb:
-        X_train, X_test, y_train, y_test, scaler = load_processed_data()
-    
-    Retornos:
-    ---------
-    tuple: (X_train, X_test, y_train, y_test, scaler)
+    Carrega os dados já processados (output de save_processed_data).
+
+    Returns:
+        Tupla (X_train, X_test, y_train, y_test, scaler).
+
+    Raises:
+        FileNotFoundError: Se algum dos arquivos processados não existir.
     """
-    print("Carregando dados processados...")
-    
+    for path in [X_TRAIN_FILE, X_TEST_FILE, Y_TRAIN_FILE, Y_TEST_FILE, SCALER_FILE]:
+        if not path.exists():
+            raise FileNotFoundError(f"Arquivo processado não encontrado: {path}")
+
     X_train = pd.read_csv(X_TRAIN_FILE)
     X_test = pd.read_csv(X_TEST_FILE)
     y_train = pd.read_csv(Y_TRAIN_FILE).iloc[:, 0]
     y_test = pd.read_csv(Y_TEST_FILE).iloc[:, 0]
     scaler = joblib.load(SCALER_FILE)
-    
-    print(f"X_train: {X_train.shape}")
-    print(f"X_test: {X_test.shape}")
-    print(f"y_train: {y_train.shape}")
-    print(f"y_test: {y_test.shape}")
-    
+
+    logger.info("Dados processados carregados — treino: %s, teste: %s", X_train.shape, X_test.shape)
     return X_train, X_test, y_train, y_test, scaler

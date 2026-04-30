@@ -31,13 +31,13 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_RAW_DIR = PROJECT_ROOT / "data" / "raw"
-DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed" / "logistic_regression"
-MODELS_DIR = PROJECT_ROOT / "models" / "logistic_regression"
+DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed" / "baseline"
+MODELS_DIR = PROJECT_ROOT / "models" / "baseline" / "logistic_regression"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
 
 # Criar diretórios se não existirem
-for dir_path in [DATA_PROCESSED_DIR, MODELS_DIR, REPORTS_DIR]:
+for dir_path in [DATA_PROCESSED_DIR, MODELS_DIR]:
     os.makedirs(dir_path, exist_ok=True)
 
 
@@ -60,7 +60,7 @@ Y_TEST_FILE = DATA_PROCESSED_DIR / "y_test.csv"
 SCALER_FILE = DATA_PROCESSED_DIR / "scaler.joblib"
 
 # Feature names para reaproveitamento
-FEATURE_NAMES_FILE = MODELS_DIR / "feature_names.txt"
+FEATURE_NAMES_FILE = PROJECT_ROOT / "models" / "feature_names.txt"
 
 
 # ============================================================================
@@ -96,7 +96,6 @@ FEATURE_IMPORTANCE_FILE = MODELS_DIR / "feature_importance.csv"
 # - random_state=42: Reprodutibilidade (mesmos resultados toda vez)
 
 MODEL_CONFIG = {
-    "model_type": "LogisticRegression",
     "max_iter": 1000,
     "C": 1.0,
     "solver": "lbfgs",
@@ -177,6 +176,13 @@ PERFORMANCE_TARGETS = {
 MLFLOW_TRACKING_URI = PROJECT_ROOT / "mlruns"
 MLFLOW_EXPERIMENT_NAME = "tech_challenge_churn_etapa1"
 MLFLOW_RUN_NAME = "logistic_regression_final"
+
+# Dicionário consolidado de configuração MLflow
+MLFLOW_CONFIG = {
+    "tracking_uri": str(MLFLOW_TRACKING_URI),
+    "experiment_name": MLFLOW_EXPERIMENT_NAME,
+    "run_name": MLFLOW_RUN_NAME,
+}
 
 
 # ============================================================================

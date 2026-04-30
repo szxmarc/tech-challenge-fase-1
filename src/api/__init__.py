@@ -1,21 +1,14 @@
 """
-🌐 MÓDULO API - Aplicação Flask
+Módulo API — aplicação FastAPI com endpoints REST.
 
-Responsabilidade: Expor modelos ML através de uma API REST.
-
-Arquivos:
-- app.py: Configuração e inicialização da Flask app
-- routes.py: Definição de endpoints e blueprints
-
-Exemplo de uso:
-    from src.api.app import create_app
-    
-    app = create_app()
-    if __name__ == "__main__":
-        app.run(debug=True)
+Pacotes internos:
+- app.py:          factory function e setup da aplicação FastAPI
+- routes.py:       controllers HTTP (endpoints)
+- dependencies.py: carregamento e cache de modelo e features
+- schemas.py:      modelos Pydantic para validação de request/response
 """
 
 from .app import create_app
-from .routes import api_bp
+from .routes import api_router
 
-__all__ = ["create_app", "api_bp"]
+__all__ = ["create_app", "api_router"]
