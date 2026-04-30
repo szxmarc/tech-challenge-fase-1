@@ -241,38 +241,187 @@ Classificação binária supervisionada:
 
 ---
 
-## 9. CRONOGRAMA (ETAPA 1)
+## 9. EVOLUÇÃO DO PROJETO E MODELAGEM
 
-| Atividade | Duração | Status |
-|-----------|---------|--------|
-| Business Understanding + ML Canvas | 1 semana | ✅ Concluído |
-| EDA + Data Quality Assessment | 2 semanas | 🔄 Em andamento |
-| Feature Engineering | 1 semana | ⏳ Planejado |
-| Baseline Models | 1 semana | ⏳ Planejado |
-| MLflow Setup + Tracking | 3 dias | ⏳ Planejado |
+### 9.1 Histórico de Mudanças nas Métricas de Negócio
+
+Durante o desenvolvimento do projeto, as métricas de negócio foram refinadas para melhor refletir a realidade operacional:
+
+#### **Versão 1.0 - Notebook `01_eda_e_baselines.ipynb` (Baseline Simplificado)**
+
+**Objetivo:** Estabelecer linha de base e validar viabilidade do projeto
+
+**Escopo:**
+- EDA completa e análise de data readiness
+- Modelos baseline: DummyClassifier + Logistic Regression
+- MLflow tracking configurado
+
+**Métricas de Negócio (Simplificadas):**
+```
+Premissas:
+- Custo de ação de retenção:  R$ 50
+- Custo de perder cliente:    R$ 500 (fixo)
+- Benefício de retenção:      R$ 400 (fixo)
+- Ratio FN/FP:                10x
+
+Fórmula:
+Valor Total = (TP × 400) - (FP × 50) - (FN × 500)
+```
+
+**Resultados:**
+- Logistic Regression: +R$ 61.500 (lucro líquido)
+- AUC-ROC: 0.841 ✅
+- F2-Score: 0.704 ✅
+- Recall: 0.781 ✅
+
+**Justificativa:** Abordagem direta para comparação rápida de baselines e validação inicial do problema de negócio.
 
 ---
 
-## 10. CRITÉRIOS DE SUCESSO DO PROJETO
+#### **Versão 2.0 - Notebook `telco_churn_mlp.ipynb` (Modelagem Avançada)**
 
-### Curto Prazo (3 meses)
-- ✅ Modelo em produção com AUC-ROC ≥ 0.80
-- ✅ Integração com sistema CRM
-- ✅ Equipe de retenção treinada
+**Objetivo:** Superar baselines com modelos complexos e otimizar valor de negócio
 
-### Médio Prazo (6 meses)
-- ✅ Redução de 10-15% na taxa de churn
-- ✅ ROI positivo comprovado
-- ✅ Processo de retreinamento automatizado
+**Escopo:**
+- Modelos avançados: Random Forest + MLP (PyTorch)
+- Explicabilidade com SHAP values
+- Otimização de threshold por valor de negócio
+- Feature selection baseada em importância
 
-### Longo Prazo (12 meses)
-- ✅ Modelo parte da operação padrão
-- ✅ Expansão para outros produtos/serviços
-- ✅ Economia estimada de R$ 1M+ por ano
+**Métricas de Negócio (Baseadas em Dados Reais):**
+```
+Premissas Refinadas:
+- Receita mensal média:       R$ 65 (dados reais: MonthlyCharges)
+- Período de retenção:        12 meses
+- Taxa de sucesso campanha:   30%
+- Custo por contato:          R$ 50
+- LTV (Lifetime Value):       R$ 780 (65 × 12)
+- Ratio FN/FP:                15.6x
+
+Fórmula:
+Valor Cliente Retido = Receita Mensal × Meses × Taxa Sucesso
+Valor TP = (R$ 65 × 12 × 30%) - R$ 50 = +R$ 184
+Valor FP = -R$ 50 (campanha desperdiçada)
+Valor FN = -R$ 780 (receita perdida em 12 meses)
+Valor TN = R$ 0
+
+Lucro Líquido = (TP × 234) - (Clientes Contatados × 50) - (FN × 780)
+```
+
+**Resultados:**
+- Logistic Regression: +R$ 40.850
+- Random Forest: +R$ 38.946
+- MLP (threshold=0.5): +R$ 39.878
+- AUC-ROC (todos): ≥ 0.836 ✅
+
+**Justificativa:** 
+- Modelagem mais realista considerando LTV
+- Taxa de sucesso de 30% baseada em benchmarks de indústria
+- Permite otimização de threshold por valor de negócio
+- Melhor alinhamento com estratégia de retenção
 
 ---
 
-**Documento criado por:** Giovanni de Aguirre Tamanini  
-**Data:** Abril 2026  
-**Versão:** 1.0  
-**Status:** Aprovado para Etapa 1
+### 9.2 Comparação Técnica entre Notebooks
+
+| Aspecto | Notebook 1 (Baseline) | Notebook 2 (Avançado) |
+|---------|----------------------|----------------------|
+| **Modelos** | Dummy + Logistic Regression | Dummy + LR + Random Forest + MLP |
+| **Framework** | Scikit-learn | Scikit-learn + PyTorch |
+| **Explicabilidade** | Coeficientes LR | SHAP values + Feature Importance |
+| **Threshold** | Fixo (0.5) | Otimizado (0.5 / p80 / otimizado) |
+| **Métricas Extras** | Básicas | MCC, Brier, Log Loss, Precision@K, KS |
+| **Feature Selection** | Não | Sim (baseada em RF) |
+| **Early Stopping** | N/A | Sim (MLP) |
+| **Visualizações** | ROC, PR, Confusion | + Curvas de treino, SHAP plots, Threshold × Lucro |
+
+---
+
+### 9.3 Evolução dos Modelos
+
+#### **Random Forest (Novo no Notebook 2)**
+
+**Configuração:**
+- 300 estimators
+- Class weight balanced
+- Análise de feature importance por impureza e permutação
+- SHAP values para explicabilidade individual
+
+**Papel:**
+1. Baseline robusto para comparação
+2. Ranqueamento de features
+3. Seleção de features para MLP
+4. Explicabilidade via SHAP
+
+#### **MLP - Multi-Layer Perceptron (Novo no Notebook 2)**
+
+**Arquitetura:**
+```
+Input Layer (features selecionadas)
+    ↓
+Hidden Layer 1 (128 neurons) + BatchNorm + ReLU + Dropout(0.3)
+    ↓
+Hidden Layer 2 (64 neurons) + BatchNorm + ReLU + Dropout(0.3)
+    ↓
+Output Layer (1 neuron) → Sigmoid
+```
+
+**Configuração:**
+- Framework: PyTorch
+- Otimizador: Adam (lr=0.001)
+- Loss: BCEWithLogitsLoss (pos_weight para desbalanceamento)
+- Early Stopping: patience=10 épocas
+- Batch size: 64
+
+**Justificativa:**
+- Captura interações não-lineares complexas
+- BatchNorm estabiliza treinamento
+- Dropout previne overfitting
+- Class weights lidam com desbalanceamento
+
+---
+
+### 9.4 Otimização de Threshold (Inovação do Notebook 2)
+
+Análise de **3 estratégias** de threshold:
+
+| Estratégia | Threshold | Lucro Líquido | Uso |
+|------------|-----------|---------------|-----|
+| **Padrão** | 0.50 | ~R$ 40k | Comparação baseline |
+| **Percentil 80 (p80)** | ~0.42 | ~R$ 29k | Top 20% de risco |
+| **Otimizado (negócio)** | Variável | Máximo | Maximiza lucro |
+
+**Benefício:** Permite escolher threshold baseado em capacidade operacional da equipe de retenção e objetivo de negócio.
+
+---
+
+### 9.5 Comparação de Resultados Finais
+
+| Métrica | Notebook 1 (Simples) | Notebook 2 (LTV) | Diferença |
+|---------|---------------------|------------------|-----------|
+| **Logistic Regression** | +R$ 61.500 | +R$ 40.850 | -33% |
+| **Custo FN** | R$ 500 | R$ 780 | +56% |
+| **Benefício TP** | R$ 400 | R$ 234 (líquido) | -41% |
+| **Ratio FN/FP** | 10x | 15.6x | +56% |
+| **AUC-ROC (LR)** | 0.841 | 0.846 | +0.6% |
+
+**Observação:** Os valores absolutos diferem devido à modelagem mais conservadora (taxa de sucesso 30%), mas **ambas as abordagens validam** que os modelos geram valor positivo e superam significativamente o baseline aleatório.
+
+---
+
+### 9.6 Decisão Final e Padrão Adotado
+
+**Adotamos a Versão 2.0** como padrão do projeto por:
+
+1. ✅ **Realismo:** Baseada em dados reais do dataset (R$ 65 médio)
+2. ✅ **Conservadorismo:** Taxa de sucesso 30% é mais realista que 100%
+3. ✅ **Flexibilidade:** Otimização de threshold por objetivo de negócio
+4. ✅ **Explicabilidade:** SHAP values para justificar decisões
+5. ✅ **Escalabilidade:** MLP pode incorporar novas features facilmente
+6. ✅ **Alinhamento:** LTV de 12 meses alinha com estratégias de retenção
+7. ✅ **Rastreabilidade:** MLflow tracking completo de experimentos
+
+**Ambos os notebooks são mantidos:**
+- **Notebook 1:** Referência de baseline e validação rápida
+- **Notebook 2:** Modelagem avançada e deploy em produção
+
