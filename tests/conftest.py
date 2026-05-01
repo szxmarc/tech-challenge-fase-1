@@ -2,6 +2,8 @@
 Fixtures compartilhadas entre todos os testes.
 """
 
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
@@ -23,6 +25,13 @@ MOCK_FEATURE_NAMES = [
 
 
 @pytest.fixture(autouse=True)
+def mock_startup_training():
+    """Impede que o pipeline de treino rode de verdade durante os testes."""
+    with patch("src.api.app._train_on_startup"):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def reset_dependency_cache():
     """Limpa o cache de modelo e features antes de cada teste."""
     deps._model = None
@@ -37,19 +46,22 @@ def reset_dependency_cache():
 @pytest.fixture
 def mock_model():
     from unittest.mock import MagicMock
+    from src.prediction.feature_mapping import MODEL_FEATURE_NAMES
     model = MagicMock()
     model.predict.return_value = np.array([1])
     model.predict_proba.return_value = np.array([[0.32, 0.68]])
     model.classes_ = np.array([0, 1])
-    model.coef_ = np.array([[0.1] * 30])
+    model.coef_ = np.array([[0.1] * len(MODEL_FEATURE_NAMES)])
+    model.feature_names_in_ = np.array(MODEL_FEATURE_NAMES)
     return model
 
 
 @pytest.fixture
 def mock_scaler():
     from unittest.mock import MagicMock
+    from src.prediction.feature_mapping import MODEL_FEATURE_NAMES
     scaler = MagicMock()
-    scaler.transform.return_value = np.zeros((1, 30))
+    scaler.transform.return_value = np.zeros((1, len(MODEL_FEATURE_NAMES)))
     return scaler
 
 
@@ -67,7 +79,7 @@ def client(app):
 @pytest.fixture
 def sample_input():
     return {
-        "gender": 1,
+        "gender": "male",
         "isSeniorCitizen": False,
         "hasPartner": True,
         "hasDependents": False,

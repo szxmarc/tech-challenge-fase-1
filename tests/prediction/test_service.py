@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from src.prediction.service import predict_batch, predict_single
+from src.prediction.service import _normalize_gender, predict_batch, predict_single
 from tests.conftest import MOCK_FEATURE_NAMES
 
 
@@ -58,7 +58,7 @@ def test_predict_single_probabilidades_somam_100(sample_input, patched_deps):
 
 def test_predict_single_levanta_erro_features_ausentes(patched_deps):
     with pytest.raises(ValueError, match="Features ausentes"):
-        predict_single({"gender": 1})
+        predict_single({"gender": "male"})
 
 
 def test_predict_single_levanta_erro_tipo_invalido(sample_input, patched_deps):
@@ -81,6 +81,30 @@ def test_predict_single_aceita_inteiros(sample_input, patched_deps):
     assert "prediction" in result
 
 
+def test_predict_single_aceita_gender_female(sample_input, patched_deps):
+    sample_input["gender"] = "female"
+    result = predict_single(sample_input)
+    assert "prediction" in result
+
+
+def test_normalize_gender_male_retorna_1():
+    assert _normalize_gender({"gender": "male"})["gender"] == 1
+
+
+def test_normalize_gender_female_retorna_0():
+    assert _normalize_gender({"gender": "female"})["gender"] == 0
+
+
+def test_normalize_gender_case_insensitive():
+    assert _normalize_gender({"gender": "Male"})["gender"] == 1
+    assert _normalize_gender({"gender": "FEMALE"})["gender"] == 0
+
+
+def test_normalize_gender_invalido_levanta_erro():
+    with pytest.raises(ValueError, match="Valor inválido para gender"):
+        _normalize_gender({"gender": "other"})
+
+
 # ── predict_batch ─────────────────────────────────────────────────────────────
 
 def test_predict_batch_retorna_lista(sample_input, patched_deps):
@@ -96,13 +120,13 @@ def test_predict_batch_preserva_indice_do_cliente(sample_input, patched_deps):
 
 
 def test_predict_batch_captura_erros_individuais(patched_deps):
-    result = predict_batch([{"gender": 1}])  # features ausentes
+    result = predict_batch([{"gender": "male"}])  # features ausentes
     assert "error" in result[0]
     assert result[0]["customerIndex"] == 0
 
 
 def test_predict_batch_processa_parcialmente(sample_input, patched_deps):
-    result = predict_batch([sample_input, {"gender": 1}])
+    result = predict_batch([sample_input, {"gender": "male"}])
     assert "prediction" in result[0]
     assert "error" in result[1]
 

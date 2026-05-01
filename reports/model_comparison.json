@@ -1,0 +1,51 @@
+{
+  "trainedAt": "2026-05-01T19:53:46",
+  "nTestSamples": 1409,
+  "models": {
+    "logisticRegression": {
+      "metrics": {
+        "accuracy": 0.731,
+        "precision": 0.4959,
+        "recall": 0.8102,
+        "f1Score": 0.6152,
+        "aucRoc": 0.8359,
+        "prAuc": 0.6244
+      },
+      "businessValue": {
+        "totalValue": 70300,
+        "avgValuePerCustomer": 49.89,
+        "truePositives": 303,
+        "falsePositives": 308,
+        "falseNegatives": 71,
+        "trueNegatives": 727
+      }
+    },
+    "mlp": {
+      "metrics": {
+        "accuracy": 0.7445,
+        "precision": 0.5127,
+        "recall": 0.754,
+        "f1Score": 0.6104,
+        "aucRoc": 0.8318,
+        "prAuc": 0.6216
+      },
+      "businessValue": {
+        "totalValue": 53400,
+        "avgValuePerCustomer": 37.9,
+        "truePositives": 282,
+        "falsePositives": 268,
+        "falseNegatives": 92,
+        "trueNegatives": 767
+      }
+    }
+  },
+  "winner": {
+    "accuracy": "mlp",
+    "precision": "mlp",
+    "recall": "logisticRegression",
+    "f1Score": "logisticRegression",
+    "aucRoc": "logisticRegression",
+    "prAuc": "logisticRegression"
+  },
+  "recommendation": "logisticRegression"
+}

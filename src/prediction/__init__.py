@@ -11,7 +11,12 @@ Fluxo de dados:
   API (camelCase) → feature_mapping → modelo sklearn (nomes originais)
 """
 
-from .feature_mapping import API_FEATURE_NAMES, FEATURE_NAME_MAPPING, MODEL_FEATURE_NAMES
+from .feature_mapping import (
+    API_FEATURE_NAMES,
+    FEATURE_NAME_MAPPING,
+    MODEL_FEATURE_NAMES,
+    MODEL_TO_API_MAPPING,
+)
 from .service import predict_batch, predict_single
 
 __all__ = [
@@ -20,4 +25,5 @@ __all__ = [
     "FEATURE_NAME_MAPPING",
     "API_FEATURE_NAMES",
     "MODEL_FEATURE_NAMES",
+    "MODEL_TO_API_MAPPING",
 ]

@@ -5,6 +5,8 @@ Funções para avaliar modelos com métricas técnicas (Accuracy, Precision, Rec
 F1, AUC-ROC, PR-AUC) e métricas de negócio (ROI baseado em custo por decisão).
 """
 
+from datetime import datetime
+
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
@@ -87,4 +89,68 @@ def calculate_business_value(y_true, y_pred) -> dict:
         "false_positives": int(fp),
         "false_negatives": int(fn),
         "true_negatives": int(tn),
+    }
+
+
+def compare_models(lr_model, mlp_model, X_test, y_test) -> dict:
+    """
+    Avalia ambos os modelos no conjunto de teste e retorna tabela comparativa.
+
+    Args:
+        lr_model: Modelo de Regressão Logística treinado.
+        mlp_model: Modelo MLP treinado.
+        X_test:   Features de teste (já escalonadas).
+        y_test:   Target de teste.
+
+    Returns:
+        Dicionário com métricas técnicas, valor de negócio, vencedor por métrica
+        e recomendação final baseada no valor de negócio total.
+    """
+    _METRIC_LABELS = ["accuracy", "precision", "recall", "f1Score", "aucRoc", "prAuc"]
+    _INTERNAL_KEYS = ["accuracy", "precision", "recall", "f1_score", "auc_roc", "pr_auc"]
+    _CAMEL_MAP = dict(zip(_INTERNAL_KEYS, _METRIC_LABELS))
+
+    results: dict = {}
+    for name, model in [("logisticRegression", lr_model), ("mlp", mlp_model)]:
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test)
+        raw = evaluate_model(y_test, y_pred, y_proba)
+        biz = calculate_business_value(y_test, y_pred)
+
+        results[name] = {
+            "metrics": {
+                _CAMEL_MAP[k]: round(float(raw[k]), 4)
+                for k in _INTERNAL_KEYS
+            },
+            "businessValue": {
+                "totalValue": int(biz["total_value"]),
+                "avgValuePerCustomer": round(float(biz["avg_value_per_customer"]), 2),
+                "truePositives": biz["true_positives"],
+                "falsePositives": biz["false_positives"],
+                "falseNegatives": biz["false_negatives"],
+                "trueNegatives": biz["true_negatives"],
+            },
+        }
+
+    winner: dict = {}
+    for metric in _METRIC_LABELS:
+        lr_val = results["logisticRegression"]["metrics"][metric]
+        mlp_val = results["mlp"]["metrics"][metric]
+        if lr_val > mlp_val:
+            winner[metric] = "logisticRegression"
+        elif mlp_val > lr_val:
+            winner[metric] = "mlp"
+        else:
+            winner[metric] = "tie"
+
+    lr_biz = results["logisticRegression"]["businessValue"]["totalValue"]
+    mlp_biz = results["mlp"]["businessValue"]["totalValue"]
+    recommendation = "mlp" if mlp_biz >= lr_biz else "logisticRegression"
+
+    return {
+        "trainedAt": datetime.now().isoformat(timespec="seconds"),
+        "nTestSamples": int(len(y_test)),
+        "models": results,
+        "winner": winner,
+        "recommendation": recommendation,
     }

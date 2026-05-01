@@ -13,14 +13,38 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from src.config.settings import DATA_PATHS, TRAIN_TEST_SPLIT
 
+# Colunas binárias (Yes/No ou Male/Female): recebem LabelEncoder e mantêm o
+# próprio nome, produzindo valores 0/1 que correspondem ao contrato da API.
+_BINARY_COLS = ["gender", "Partner", "Dependents", "PhoneService", "PaperlessBilling"]
+
+# Colunas de origem de cada feature derivada (nomes pós-encoding do modelo).
+DERIVED_FEATURE_SOURCES: dict[str, list[str]] = {
+    "charges_per_month": ["TotalCharges", "tenure", "MonthlyCharges"],
+    "is_monthly":        ["Contract_One year", "Contract_Two year"],
+    "service_count":     ["OnlineSecurity_Yes", "OnlineBackup_Yes", "DeviceProtection_Yes",
+                          "TechSupport_Yes", "StreamingTV_Yes", "StreamingMovies_Yes"],
+    "has_no_services":   ["OnlineSecurity_Yes", "OnlineBackup_Yes", "DeviceProtection_Yes",
+                          "TechSupport_Yes", "StreamingTV_Yes", "StreamingMovies_Yes"],
+    "is_senior_alone":   ["SeniorCitizen", "Partner"],
+    "charges_x_monthly": ["MonthlyCharges", "Contract_One year", "Contract_Two year"],
+}
+
+_SERVICE_COLS = [
+    "OnlineSecurity_Yes", "OnlineBackup_Yes", "DeviceProtection_Yes",
+    "TechSupport_Yes", "StreamingTV_Yes", "StreamingMovies_Yes",
+]
+
 
 def encode_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Realiza encoding de variáveis categóricas do dataset Telco.
 
-    Aplica LabelEncoder na coluna alvo (Churn) e get_dummies nas
-    demais colunas categóricas. Remove a coluna customerID pois
-    não é uma feature preditiva.
+    Estratégia:
+    - Colunas binárias (Yes/No, Male/Female): LabelEncoder → 0/1, mantém nome original.
+    - Colunas multi-classe: pd.get_dummies com drop_first=True, removendo a
+      categoria base de cada variável (elimina multicolinearidade).
+    - TotalCharges: convertida para float antes do encoding (no CSV bruto
+      algumas linhas têm espaço em branco, tornando a coluna object).
 
     Args:
         df: DataFrame com os dados brutos.
@@ -33,13 +57,99 @@ def encode_features(df: pd.DataFrame) -> pd.DataFrame:
     if "customerID" in df_encoded.columns:
         df_encoded = df_encoded.drop(columns=["customerID"])
 
+    if "TotalCharges" in df_encoded.columns:
+        df_encoded["TotalCharges"] = (
+            pd.to_numeric(df_encoded["TotalCharges"], errors="coerce").fillna(0.0)
+        )
+
     if "Churn" in df_encoded.columns:
         le = LabelEncoder()
         df_encoded["Churn"] = le.fit_transform(df_encoded["Churn"])
 
-    df_encoded = pd.get_dummies(df_encoded, drop_first=False)
+    for col in _BINARY_COLS:
+        if col in df_encoded.columns:
+            le = LabelEncoder()
+            df_encoded[col] = le.fit_transform(df_encoded[col])
+
+    df_encoded = pd.get_dummies(df_encoded, drop_first=True)
 
     return df_encoded
+
+
+def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cria features derivadas a partir do DataFrame já encodado.
+
+    Pode ser chamado tanto no pipeline de treino (DataFrame completo, 30 colunas)
+    quanto na inferência (apenas as colunas originais presentes no input).
+    Colunas ausentes fazem a derivada correspondente ser silenciosamente omitida.
+
+    Features derivadas:
+      charges_per_month  TotalCharges / tenure (ou MonthlyCharges se tenure == 0)
+      is_monthly         1 se contrato mensal (categoria base do get_dummies)
+      service_count      soma dos serviços de internet ativos
+      has_no_services    1 se nenhum serviço de internet contratado
+      is_senior_alone    SeniorCitizen sem parceiro
+      charges_x_monthly  MonthlyCharges × is_monthly
+    """
+    df = df.copy()
+
+    if {"TotalCharges", "tenure", "MonthlyCharges"}.issubset(df.columns):
+        df["charges_per_month"] = df.apply(
+            lambda r: r["TotalCharges"] / r["tenure"] if r["tenure"] > 0 else r["MonthlyCharges"],
+            axis=1,
+        )
+
+    if {"Contract_One year", "Contract_Two year"}.issubset(df.columns):
+        df["is_monthly"] = 1 - df["Contract_One year"] - df["Contract_Two year"]
+
+    available_service = [c for c in _SERVICE_COLS if c in df.columns]
+    if available_service:
+        df["service_count"] = df[available_service].sum(axis=1)
+        df["has_no_services"] = (df["service_count"] == 0).astype(int)
+
+    if {"SeniorCitizen", "Partner"}.issubset(df.columns):
+        df["is_senior_alone"] = df["SeniorCitizen"] * (1 - df["Partner"])
+
+    if {"MonthlyCharges", "is_monthly"}.issubset(df.columns):
+        df["charges_x_monthly"] = df["MonthlyCharges"] * df["is_monthly"]
+
+    return df
+
+
+def select_features(X: pd.DataFrame, y: pd.Series, threshold: float = 0.90) -> list[str]:
+    """
+    Seleciona features usando importância acumulada do Random Forest.
+
+    Retorna o menor conjunto de features (em ordem decrescente de importância)
+    que cobre ao menos `threshold` da importância total.
+
+    Args:
+        X: DataFrame com todas as features.
+        y: Series do target.
+        threshold: Fração mínima de importância acumulada (padrão 90%).
+
+    Returns:
+        Lista de nomes de features selecionadas.
+    """
+    from sklearn.ensemble import RandomForestClassifier
+
+    rf = RandomForestClassifier(
+        n_estimators=100,
+        random_state=42,
+        class_weight="balanced",
+        n_jobs=-1,
+    )
+    rf.fit(X, y)
+
+    importances = pd.Series(rf.feature_importances_, index=X.columns)
+    importances = importances.sort_values(ascending=False)
+    cumulative = importances.cumsum()
+
+    n = int((cumulative < threshold).sum()) + 1
+    n = min(n, len(importances))
+
+    return importances.index[:n].tolist()
 
 
 def split_and_scale_data(X: pd.DataFrame, y: pd.Series):

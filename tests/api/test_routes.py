@@ -87,6 +87,68 @@ def test_features_retorna_500_em_erro(client):
     assert response.status_code == 500
 
 
+# ── /api/v1/model/comparison ─────────────────────────────────────────────────
+
+MOCK_COMPARISON = {
+    "trainedAt": "2024-01-01T12:00:00",
+    "nTestSamples": 1409,
+    "models": {
+        "logisticRegression": {
+            "metrics": {"accuracy": 0.78, "precision": 0.62, "recall": 0.81,
+                        "f1Score": 0.70, "aucRoc": 0.85, "prAuc": 0.72},
+            "businessValue": {"totalValue": 300000, "avgValuePerCustomer": 212.9,
+                              "truePositives": 280, "falsePositives": 50,
+                              "falseNegatives": 20, "trueNegatives": 1059},
+        },
+        "mlp": {
+            "metrics": {"accuracy": 0.82, "precision": 0.68, "recall": 0.79,
+                        "f1Score": 0.73, "aucRoc": 0.88, "prAuc": 0.76},
+            "businessValue": {"totalValue": 340000, "avgValuePerCustomer": 241.3,
+                              "truePositives": 290, "falsePositives": 40,
+                              "falseNegatives": 10, "trueNegatives": 1069},
+        },
+    },
+    "winner": {"accuracy": "mlp", "precision": "mlp", "recall": "logisticRegression",
+               "f1Score": "mlp", "aucRoc": "mlp", "prAuc": "mlp"},
+    "recommendation": "mlp",
+}
+
+
+def test_comparison_retorna_404_sem_arquivo(client, tmp_path):
+    with patch("src.api.routes.DATA_PATHS", {"comparison": str(tmp_path / "nao_existe.json")}):
+        response = client.get("/api/v1/model/comparison")
+    assert response.status_code == 404
+
+
+def test_comparison_retorna_200_com_arquivo(client, tmp_path):
+    import json
+    comparison_file = tmp_path / "comparison.json"
+    comparison_file.write_text(json.dumps(MOCK_COMPARISON), encoding="utf-8")
+    with patch("src.api.routes.DATA_PATHS", {"comparison": str(comparison_file)}):
+        response = client.get("/api/v1/model/comparison")
+    assert response.status_code == 200
+
+
+def test_comparison_contem_chaves_esperadas(client, tmp_path):
+    import json
+    comparison_file = tmp_path / "comparison.json"
+    comparison_file.write_text(json.dumps(MOCK_COMPARISON), encoding="utf-8")
+    with patch("src.api.routes.DATA_PATHS", {"comparison": str(comparison_file)}):
+        data = client.get("/api/v1/model/comparison").json()
+    for key in ["trainedAt", "nTestSamples", "models", "winner", "recommendation"]:
+        assert key in data
+
+
+def test_comparison_contem_ambos_modelos(client, tmp_path):
+    import json
+    comparison_file = tmp_path / "comparison.json"
+    comparison_file.write_text(json.dumps(MOCK_COMPARISON), encoding="utf-8")
+    with patch("src.api.routes.DATA_PATHS", {"comparison": str(comparison_file)}):
+        data = client.get("/api/v1/model/comparison").json()
+    assert "logisticRegression" in data["models"]
+    assert "mlp" in data["models"]
+
+
 # ── /api/v1/predict ───────────────────────────────────────────────────────────
 
 def test_predict_retorna_200_com_input_valido(client, sample_input):
@@ -101,7 +163,7 @@ def test_predict_retorna_422_sem_json(client):
 
 
 def test_predict_retorna_422_com_body_incompleto(client):
-    response = client.post("/api/v1/predict", json={"gender": 1})
+    response = client.post("/api/v1/predict", json={"gender": "male"})
     assert response.status_code == 422
 
 

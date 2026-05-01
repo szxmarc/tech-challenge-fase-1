@@ -8,7 +8,7 @@ import src.api.dependencies as deps
 
 def test_get_model_carrega_do_disco(tmp_path, mock_model, mock_scaler):
     with patch("src.api.dependencies.joblib.load", side_effect=[mock_model, mock_scaler]), \
-         patch("src.api.dependencies.DATA_PATHS", {"models": str(tmp_path)}):
+         patch("src.api.dependencies.DATA_PATHS", {"mlp_models": str(tmp_path)}):
         model, scaler = deps.get_model()
 
     assert model is mock_model
@@ -17,7 +17,7 @@ def test_get_model_carrega_do_disco(tmp_path, mock_model, mock_scaler):
 
 def test_get_model_usa_cache_na_segunda_chamada(tmp_path, mock_model, mock_scaler):
     with patch("src.api.dependencies.joblib.load", side_effect=[mock_model, mock_scaler]) as mock_load, \
-         patch("src.api.dependencies.DATA_PATHS", {"models": str(tmp_path)}):
+         patch("src.api.dependencies.DATA_PATHS", {"mlp_models": str(tmp_path)}):
         deps.get_model()
         deps.get_model()
 
@@ -26,7 +26,7 @@ def test_get_model_usa_cache_na_segunda_chamada(tmp_path, mock_model, mock_scale
 
 def test_get_model_retorna_tupla(tmp_path, mock_model, mock_scaler):
     with patch("src.api.dependencies.joblib.load", side_effect=[mock_model, mock_scaler]), \
-         patch("src.api.dependencies.DATA_PATHS", {"models": str(tmp_path)}):
+         patch("src.api.dependencies.DATA_PATHS", {"mlp_models": str(tmp_path)}):
         result = deps.get_model()
 
     assert isinstance(result, tuple)

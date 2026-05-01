@@ -1,8 +1,10 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
 class CustomerFeatures(BaseModel):
-    gender: int
+    gender: Literal["male", "female"]
     isSeniorCitizen: bool | int
     hasPartner: bool | int
     hasDependents: bool | int

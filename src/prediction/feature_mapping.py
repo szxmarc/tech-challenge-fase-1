@@ -58,6 +58,10 @@ API_FEATURE_NAMES: list[str] = list(FEATURE_NAME_MAPPING.keys())
 # que será entregue ao scaler e ao modelo.
 MODEL_FEATURE_NAMES: list[str] = list(FEATURE_NAME_MAPPING.values())
 
+# Mapeamento inverso: nome original do modelo → nome camelCase da API.
+# Usado para converter features selecionadas no treino para o contrato da API.
+MODEL_TO_API_MAPPING: dict[str, str] = {v: k for k, v in FEATURE_NAME_MAPPING.items()}
+
 
 def to_model_input(api_input: dict) -> dict:
     """

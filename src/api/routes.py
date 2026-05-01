@@ -13,13 +13,16 @@ Endpoints registrados em /api/v1:
   POST /predict/batch  Predição de churn para múltiplos clientes
 """
 
+import json
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from src.api.dependencies import get_feature_names, get_model
 from src.api.schemas import BatchPredictRequest, CustomerFeatures
+from src.config.settings import DATA_PATHS
 from src.prediction.service import predict_batch, predict_single
 
 api_router = APIRouter()
@@ -58,6 +61,21 @@ def features():
         return {"nFeatures": len(feature_names), "features": feature_names}
     except Exception as exc:
         logger.error("Erro ao listar features: %s", exc)
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@api_router.get("/model/comparison")
+def model_comparison():
+    comparison_path = Path(DATA_PATHS["comparison"])
+    if not comparison_path.exists():
+        return JSONResponse(
+            {"error": "Comparação não disponível. Aguarde o treinamento inicial."},
+            status_code=404,
+        )
+    try:
+        return json.loads(comparison_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        logger.error("Erro ao ler comparação: %s", exc)
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 

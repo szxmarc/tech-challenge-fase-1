@@ -25,18 +25,18 @@ _feature_names: list[str] | None = None
 
 def get_model():
     """
-    Retorna o modelo e o scaler, carregando do disco na primeira chamada.
+    Retorna o modelo MLP de produção e o scaler, carregando do disco na primeira chamada.
 
     Returns:
-        Tupla (modelo LogisticRegression, scaler StandardScaler).
+        Tupla (modelo MLPClassifier, scaler StandardScaler).
     """
     global _model, _scaler
 
     if _model is None:
-        model_path = Path(DATA_PATHS["models"])
+        model_path = Path(DATA_PATHS["mlp_models"])
         _model = joblib.load(model_path / "model.joblib")
         _scaler = joblib.load(model_path / "scaler.joblib")
-        logger.info("Modelo carregado: %s", model_path)
+        logger.info("Modelo MLP carregado: %s", model_path)
 
     return _model, _scaler
 

@@ -5,8 +5,8 @@ Ponto de entrada da aplicação.
 Execute para iniciar o servidor REST:
     python run_app.py
 
-A API estará disponível em http://localhost:5000
-Documentação interativa em http://localhost:5000/docs
+A API estará disponível em http://localhost:8000
+Documentação interativa em http://localhost:8000/docs
 """
 
 import uvicorn
@@ -16,4 +16,4 @@ from src.api.app import create_app
 app = create_app()
 
 if __name__ == "__main__":
-    uvicorn.run("run_app:app", host="0.0.0.0", port=5000, reload=True)
+    uvicorn.run("run_app:app", host="0.0.0.0", port=8000, reload=True)

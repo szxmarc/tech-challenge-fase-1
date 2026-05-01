@@ -14,13 +14,28 @@ detalhes do modelo, e que o modelo não conheça o contrato da API.
 import pandas as pd
 
 from src.api.dependencies import get_feature_names, get_model
-from src.prediction.feature_mapping import MODEL_FEATURE_NAMES, to_model_input
+from src.data.processor import engineer_features
+from src.prediction.feature_mapping import to_model_input
+
+
+_GENDER_MAP = {"female": 0, "male": 1}
 
 
 def _validate_input(input_data: dict) -> list[str]:
     """Retorna lista de features camelCase ausentes no input recebido."""
     expected_features = get_feature_names()
     return [feature for feature in expected_features if feature not in input_data]
+
+
+def _normalize_gender(input_data: dict) -> dict:
+    """Converte 'male'/'female' para 1/0 (espelho do LabelEncoder de treino)."""
+    gender = input_data.get("gender")
+    if not isinstance(gender, str):
+        return input_data
+    key = gender.lower()
+    if key not in _GENDER_MAP:
+        raise ValueError(f"Valor inválido para gender: '{gender}'. Use 'male' ou 'female'.")
+    return {**input_data, "gender": _GENDER_MAP[key]}
 
 
 def _normalize_booleans(input_data: dict) -> dict:
@@ -64,14 +79,19 @@ def predict_single(input_data: dict) -> dict:
     if missing_features:
         raise ValueError(f"Features ausentes: {missing_features}")
 
-    # Normaliza booleanos e converte chaves camelCase → nomes originais do modelo
-    normalized = _normalize_booleans(input_data)
+    # Normaliza gender (string → int) e booleanos (True/False → 1/0)
+    normalized = _normalize_gender(input_data)
+    normalized = _normalize_booleans(normalized)
     model_input = to_model_input(normalized)
+
+    # Computa features derivadas a partir das originais
+    input_df = engineer_features(pd.DataFrame([model_input]))
+    model_input = input_df.iloc[0].to_dict()
 
     model, scaler = get_model()
 
     try:
-        X = pd.DataFrame([model_input])[MODEL_FEATURE_NAMES].astype(float)
+        X = pd.DataFrame([model_input])[list(model.feature_names_in_)].astype(float)
     except (ValueError, TypeError) as exc:
         raise ValueError(f"Tipo de dado inválido: {exc}") from exc
 

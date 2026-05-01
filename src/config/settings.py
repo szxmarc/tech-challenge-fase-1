@@ -33,11 +33,12 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_RAW_DIR = PROJECT_ROOT / "data" / "raw"
 DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed" / "baseline"
 MODELS_DIR = PROJECT_ROOT / "models" / "baseline" / "logistic_regression"
+MLP_DIR = PROJECT_ROOT / "models" / "mlp"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
 
 # Criar diretórios se não existirem
-for dir_path in [DATA_PROCESSED_DIR, MODELS_DIR]:
+for dir_path in [DATA_PROCESSED_DIR, MODELS_DIR, MLP_DIR]:
     os.makedirs(dir_path, exist_ok=True)
 
 
@@ -61,6 +62,7 @@ SCALER_FILE = DATA_PROCESSED_DIR / "scaler.joblib"
 
 # Feature names para reaproveitamento
 FEATURE_NAMES_FILE = PROJECT_ROOT / "models" / "feature_names.txt"
+COMPARISON_FILE = REPORTS_DIR / "model_comparison.json"
 
 
 # ============================================================================
@@ -101,6 +103,29 @@ MODEL_CONFIG = {
     "solver": "lbfgs",
     "class_weight": "balanced",
     "random_state": 42
+}
+
+# Hiperparâmetros do MLP — arquitetura reduzida para o volume do dataset Telco (~5.600 amostras
+# de treino). A arquitetura anterior (128→64→32) era grande demais, causando overfitting.
+#
+# Mudanças em relação à versão anterior e o motivo de cada uma:
+# - hidden_layer_sizes (128,64,32)→(64,32): menos parâmetros para aprender, reduz overfitting
+# - alpha 0.0001→0.01: regularização L2 mais forte, penaliza pesos grandes e generaliza melhor
+# - batch_size 256→64: mais atualizações de gradiente por época, aprendizado mais fino
+# - max_iter 80→200: mais tempo para convergir sem depender só do early stopping
+# - n_iter_no_change 10→15: mais paciência antes de parar, evita interrupção prematura
+MLP_CONFIG = {
+    "hidden_layer_sizes": (64, 32),
+    "activation": "relu",
+    "solver": "adam",
+    "alpha": 0.01,
+    "batch_size": 64,
+    "max_iter": 200,
+    "learning_rate_init": 1e-3,
+    "early_stopping": True,
+    "validation_fraction": 0.1,
+    "n_iter_no_change": 15,
+    "random_state": 42,
 }
 
 # Configuração de split treino/teste
@@ -196,6 +221,7 @@ DATA_PATHS = {
     "data_raw": str(DATA_RAW_DIR),
     "data_processed": str(DATA_PROCESSED_DIR),
     "models": str(MODELS_DIR),
+    "mlp_models": str(MLP_DIR),
     "reports": str(REPORTS_DIR),
     "notebooks": str(NOTEBOOKS_DIR),
     "raw_dataset": str(RAW_DATASET),
@@ -209,4 +235,5 @@ DATA_PATHS = {
     "metrics": str(METRICS_FILE),
     "feature_names": str(FEATURE_NAMES_FILE),
     "feature_importance": str(FEATURE_IMPORTANCE_FILE),
+    "comparison": str(COMPARISON_FILE),
 }
