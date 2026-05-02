@@ -363,6 +363,8 @@ Hidden Layer 1 (128 neurons) + BatchNorm + ReLU + Dropout(0.3)
     ↓
 Hidden Layer 2 (64 neurons) + BatchNorm + ReLU + Dropout(0.3)
     ↓
+Hidden Layer 3 (32 neurons) + BatchNorm + ReLU + Dropout(0.3)
+    ↓
 Output Layer (1 neuron) → Sigmoid
 ```
 
@@ -371,7 +373,7 @@ Output Layer (1 neuron) → Sigmoid
 - Otimizador: Adam (lr=0.001)
 - Loss: BCEWithLogitsLoss (pos_weight para desbalanceamento)
 - Early Stopping: patience=10 épocas
-- Batch size: 64
+- Batch size: 256
 
 **Justificativa:**
 - Captura interações não-lineares complexas
@@ -389,7 +391,7 @@ Análise de **3 estratégias** de threshold:
 |------------|-----------|---------------|-----|
 | **Padrão** | 0.50 | ~R$ 40k | Comparação baseline |
 | **Percentil 80 (p80)** | ~0.42 | ~R$ 29k | Top 20% de risco |
-| **Otimizado (negócio)** | Variável | Máximo | Maximiza lucro |
+| **Otimizado (negócio)** | 0.44 | ~R$ 41.588 | Maximiza lucro |
 
 **Benefício:** Permite escolher threshold baseado em capacidade operacional da equipe de retenção e objetivo de negócio.
 

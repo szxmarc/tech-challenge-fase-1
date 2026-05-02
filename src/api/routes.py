@@ -1,14 +1,10 @@
 """
 Controllers HTTP da API.
 
-Cada função de rota tem responsabilidade única: parse do request,
-delegação ao serviço de predição e formatação da resposta HTTP.
-Nenhuma lógica de negócio ou acesso ao modelo reside aqui.
-
 Endpoints registrados em /api/v1:
   GET  /health         Verifica saúde da API e disponibilidade do modelo
   GET  /model/info     Metadados do modelo carregado
-  GET  /features       Lista de features esperadas (nomes camelCase)
+  GET  /features       Lista de features usadas pelo modelo
   POST /predict        Predição de churn para um único cliente
   POST /predict/batch  Predição de churn para múltiplos clientes
 """
@@ -18,9 +14,9 @@ import logging
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from src.api.dependencies import get_feature_names, get_model
+from src.api.dependencies import get_model
 from src.api.schemas import BatchPredictRequest, CustomerFeatures
-from src.prediction.service import predict_batch, predict_single
+from src.prediction.service import TOP_FEATURES, predict_batch, predict_single
 
 api_router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -38,13 +34,12 @@ def health():
 @api_router.get("/model/info")
 def model_info():
     try:
-        model, _ = get_model()
-        feature_names = get_feature_names()
+        model, *_ = get_model()
         return {
             "modelType": type(model).__name__,
-            "nFeatures": len(feature_names),
-            "nClasses": len(model.classes_),
-            "classes": model.classes_.tolist(),
+            "nFeatures": len(TOP_FEATURES),
+            "nClasses": 2,
+            "classes": [0, 1],
         }
     except Exception as exc:
         logger.error("Erro ao obter info do modelo: %s", exc)
@@ -53,12 +48,7 @@ def model_info():
 
 @api_router.get("/features")
 def features():
-    try:
-        feature_names = get_feature_names()
-        return {"nFeatures": len(feature_names), "features": feature_names}
-    except Exception as exc:
-        logger.error("Erro ao listar features: %s", exc)
-        return JSONResponse({"error": str(exc)}, status_code=500)
+    return {"nFeatures": len(TOP_FEATURES), "features": TOP_FEATURES}
 
 
 @api_router.post("/predict")

@@ -1,10 +1,10 @@
 """
-Módulo de modelos — treinamento e persistência.
+Módulo de modelos — arquitetura, treinamento e persistência.
 
 Pacotes internos:
-- trainer.py: treinar, salvar e carregar o modelo de regressão logística
+- trainer.py: ChurnMLP, train_mlp, save_model, load_model
 """
 
-from .trainer import load_model, save_model, train_logistic_regression
+from .trainer import ChurnMLP, load_model, save_model, train_mlp
 
-__all__ = ["train_logistic_regression", "save_model", "load_model"]
+__all__ = ["ChurnMLP", "train_mlp", "save_model", "load_model"]

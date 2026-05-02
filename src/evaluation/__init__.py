@@ -6,12 +6,12 @@ Pacotes internos:
 - features.py: importância e ranking de features
 """
 
-from .features import get_feature_importance, rank_features
+from .features import get_feature_importance_mlp, rank_features
 from .metrics import calculate_business_value, evaluate_model
 
 __all__ = [
     "evaluate_model",
     "calculate_business_value",
-    "get_feature_importance",
+    "get_feature_importance_mlp",
     "rank_features",
 ]

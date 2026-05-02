@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "tech-challenge-churn"
@@ -38,6 +38,7 @@ notebooks = [
     "ipykernel>=6.25.0",
     "notebook>=7.0.0",
     "tqdm>=4.66.0",
+    "shap>=0.44.0",
 ]
 
 [tool.pytest.ini_options]

@@ -6,8 +6,7 @@ Gráficos para análise de modelos (ROC, Precision-Recall, Confusion Matrix, etc
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import roc_curve, auc, confusion_matrix, precision_recall_curve
-import numpy as np
+from sklearn.metrics import auc, confusion_matrix, roc_curve
 
 
 def plot_roc_curve(y_true, y_pred_proba, ax=None):

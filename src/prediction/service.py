@@ -1,44 +1,199 @@
 """
 Serviço de predição de churn.
 
-Responsável por toda a lógica de negócio do fluxo de inferência:
-  1. Validar o input recebido pela API (nomes camelCase)
-  2. Converter para os nomes originais esperados pelo modelo
-  3. Escalonar as features com o scaler treinado
-  4. Executar a inferência e retornar o resultado formatado
-
-O isolamento desta camada garante que as rotas HTTP não conheçam
-detalhes do modelo, e que o modelo não conheça o contrato da API.
+Replica o pipeline exato do notebook:
+  1. Feature engineering
+  2. One-hot encoding → 36 colunas (mesma ordem do treino)
+  3. Imputar NaN com mediana (SimpleImputer)
+  4. Escalar as 36 colunas com o scaler treinado
+  5. Selecionar as 19 TOP_FEATURES
+  6. Inferência com ChurnMLP (PyTorch)
 """
 
+import numpy as np
 import pandas as pd
+import torch
 
-from src.api.dependencies import get_feature_names, get_model
-from src.prediction.feature_mapping import MODEL_FEATURE_NAMES, to_model_input
+from src.api.dependencies import get_model
+
+# Ordem exata das 36 colunas após get_dummies no notebook
+ALL_FEATURES = [
+    "SeniorCitizen",
+    "tenure",
+    "MonthlyCharges",
+    "TotalCharges",
+    "charges_per_month",
+    "is_monthly",
+    "service_count",
+    "has_no_services",
+    "is_senior_alone",
+    "charges_x_monthly",
+    "gender_Male",
+    "Partner_Yes",
+    "Dependents_Yes",
+    "PhoneService_Yes",
+    "MultipleLines_No phone service",
+    "MultipleLines_Yes",
+    "InternetService_Fiber optic",
+    "InternetService_No",
+    "OnlineSecurity_No internet service",
+    "OnlineSecurity_Yes",
+    "OnlineBackup_No internet service",
+    "OnlineBackup_Yes",
+    "DeviceProtection_No internet service",
+    "DeviceProtection_Yes",
+    "TechSupport_No internet service",
+    "TechSupport_Yes",
+    "StreamingTV_No internet service",
+    "StreamingTV_Yes",
+    "StreamingMovies_No internet service",
+    "StreamingMovies_Yes",
+    "Contract_One year",
+    "Contract_Two year",
+    "PaperlessBilling_Yes",
+    "PaymentMethod_Credit card (automatic)",
+    "PaymentMethod_Electronic check",
+    "PaymentMethod_Mailed check",
+]
+
+# 19 features selecionadas pelo Random Forest (ordem do treino da MLP)
+TOP_FEATURES = [
+    "charges_x_monthly",
+    "tenure",
+    "TotalCharges",
+    "is_monthly",
+    "charges_per_month",
+    "MonthlyCharges",
+    "Contract_Two year",
+    "InternetService_Fiber optic",
+    "PaymentMethod_Electronic check",
+    "service_count",
+    "OnlineSecurity_Yes",
+    "TechSupport_Yes",
+    "PaperlessBilling_Yes",
+    "gender_Male",
+    "Contract_One year",
+    "InternetService_No",
+    "OnlineSecurity_No internet service",
+    "OnlineBackup_Yes",
+    "StreamingTV_No internet service",
+]
+
+CAT_COLS = [
+    "gender",
+    "Partner",
+    "Dependents",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+]
 
 
-def _validate_input(input_data: dict) -> list[str]:
-    """Retorna lista de features camelCase ausentes no input recebido."""
-    expected_features = get_feature_names()
-    return [feature for feature in expected_features if feature not in input_data]
+def _feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
+    """Replica o feature_engineering do notebook."""
+    df = df.copy()
+
+    df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce").fillna(0)
+
+    df["charges_per_month"] = np.where(
+        df["tenure"] == 0,
+        df["MonthlyCharges"],
+        df["TotalCharges"] / df["tenure"],
+    )
+
+    df["is_monthly"] = (df["Contract"] == "Month-to-month").astype(int)
+
+    service_cols = [
+        "OnlineSecurity", "OnlineBackup", "DeviceProtection",
+        "TechSupport", "StreamingTV", "StreamingMovies",
+    ]
+    df["service_count"] = df[service_cols].apply(
+        lambda row: (row == "Yes").sum(), axis=1
+    )
+
+    df["has_no_services"] = (df["service_count"] == 0).astype(int)
+
+    df["is_senior_alone"] = (
+        (df["SeniorCitizen"] == 1) & (df["Partner"] == "No")
+    ).astype(int)
+
+    df["charges_x_monthly"] = df["MonthlyCharges"] * df["is_monthly"]
+
+    return df
 
 
-def _normalize_booleans(input_data: dict) -> dict:
-    """Converte valores booleanos para inteiros (True → 1, False → 0)."""
-    return {
-        key: int(value) if isinstance(value, bool) else value
-        for key, value in input_data.items()
-    }
+# Categorias exatas de cada coluna — mesmas do dataset de treino
+CATEGORIES = {
+    "gender": ["Female", "Male"],
+    "Partner": ["No", "Yes"],
+    "Dependents": ["No", "Yes"],
+    "PhoneService": ["No", "Yes"],
+    "MultipleLines": ["No", "No phone service", "Yes"],
+    "InternetService": ["DSL", "Fiber optic", "No"],
+    "OnlineSecurity": ["No", "No internet service", "Yes"],
+    "OnlineBackup": ["No", "No internet service", "Yes"],
+    "DeviceProtection": ["No", "No internet service", "Yes"],
+    "TechSupport": ["No", "No internet service", "Yes"],
+    "StreamingTV": ["No", "No internet service", "Yes"],
+    "StreamingMovies": ["No", "No internet service", "Yes"],
+    "Contract": ["Month-to-month", "One year", "Two year"],
+    "PaperlessBilling": ["No", "Yes"],
+    "PaymentMethod": [
+        "Bank transfer (automatic)",
+        "Credit card (automatic)",
+        "Electronic check",
+        "Mailed check"
+    ],
+}
+
+def _encode(df: pd.DataFrame) -> pd.DataFrame:
+    for col, cats in CATEGORIES.items():
+        df[col] = pd.Categorical(df[col], categories=cats)
+    return pd.get_dummies(df, columns=list(CATEGORIES.keys()), drop_first=True)
 
 
-def _build_prediction_result(y_pred: int, y_pred_proba) -> dict:
-    """Monta o dicionário de resposta a partir da predição bruta do modelo."""
+def _preprocess(input_data: dict, imputer, scaler) -> np.ndarray:
+    """
+    Pipeline completo:
+    feature engineering → get_dummies → imputer → scaler → seleciona TOP_FEATURES
+    """
+    df = pd.DataFrame([input_data])
+    df = _feature_engineering(df)
+    df = _encode(df)
+
+    # Garante todas as 36 colunas na ordem correta
+    for col in ALL_FEATURES:
+        if col not in df.columns:
+            df[col] = 0
+
+    X = df[ALL_FEATURES].astype(float)
+
+    # Imputer → Scaler
+    X_imp = imputer.transform(X)
+    X_scaled = scaler.transform(X_imp)
+
+    # Seleciona as 19 TOP_FEATURES
+    top_indices = [ALL_FEATURES.index(f) for f in TOP_FEATURES]
+    return X_scaled[:, top_indices]
+
+
+def _build_prediction_result(y_pred: int, proba_no_churn: float, proba_churn: float) -> dict:
+    """Monta o dicionário de resposta."""
     return {
         "prediction": int(y_pred),
-        "predictionLabel": "Churn" if y_pred == 1 else "Não Churn",
-        "probabilityNoChurn": f"{y_pred_proba[0] * 100:.1f}%",
-        "probabilityChurn": f"{y_pred_proba[1] * 100:.1f}%",
-        "confidence": f"{max(y_pred_proba) * 100:.1f}%",
+        "predictionLabel": "Churn" if y_pred == 1 else "Nao Churn",
+        "probabilityNoChurn": f"{proba_no_churn * 100:.1f}%",
+        "probabilityChurn": f"{proba_churn * 100:.1f}%",
+        "confidence": f"{max(proba_no_churn, proba_churn) * 100:.1f}%",
     }
 
 
@@ -46,52 +201,32 @@ def predict_single(input_data: dict) -> dict:
     """
     Realiza predição de churn para um único cliente.
 
-    O input deve usar os nomes camelCase do contrato da API
-    (definidos em feature_mapping.py). A conversão para os nomes
-    originais do modelo é feita internamente.
-
     Args:
-        input_data: Dicionário com as features do cliente em camelCase.
+        input_data: Dicionário com os campos brutos do cliente.
 
     Returns:
-        Dicionário com predição, label e probabilidades formatadas em %.
-
-    Raises:
-        ValueError: Se alguma feature obrigatória estiver ausente.
-        ValueError: Se algum valor não puder ser convertido para float.
+        Dicionário com predição, label e probabilidades.
     """
-    missing_features = _validate_input(input_data)
-    if missing_features:
-        raise ValueError(f"Features ausentes: {missing_features}")
+    model, scaler, imputer = get_model()
 
-    # Normaliza booleanos e converte chaves camelCase → nomes originais do modelo
-    normalized = _normalize_booleans(input_data)
-    model_input = to_model_input(normalized)
+    X_top = _preprocess(input_data, imputer, scaler)
 
-    model, scaler = get_model()
+    with torch.no_grad():
+        logits = model(torch.tensor(X_top, dtype=torch.float32))
+        proba_churn = torch.sigmoid(logits).item()
 
-    try:
-        X = pd.DataFrame([model_input])[MODEL_FEATURE_NAMES].astype(float)
-    except (ValueError, TypeError) as exc:
-        raise ValueError(f"Tipo de dado inválido: {exc}") from exc
+    proba_no_churn = 1 - proba_churn
+    y_pred = int(proba_churn >= 0.5)
 
-    X_scaled = scaler.transform(X)
-    y_pred = model.predict(X_scaled)[0]
-    y_pred_proba = model.predict_proba(X_scaled)[0]
-
-    return _build_prediction_result(y_pred, y_pred_proba)
+    return _build_prediction_result(y_pred, proba_no_churn, proba_churn)
 
 
 def predict_batch(customers: list[dict]) -> list[dict]:
     """
     Realiza predição de churn para uma lista de clientes.
 
-    Cada cliente é processado individualmente via predict_single.
-    Erros por cliente são capturados e retornados no campo "error"
-    sem interromper o processamento dos demais.
-
     Args:
-        customers: Lista de dicionários com features em camelCase por cliente.
+        customers: Lista de dicionários com campos brutos por cliente.
 
     Returns:
         Lista de resultados com o índice original de cada cliente preservado.

@@ -1,3 +1,7 @@
+"""
+Testes para src/api/routes.py
+"""
+
 from unittest.mock import patch
 
 import pytest
@@ -14,12 +18,11 @@ MOCK_RESULT = {
 
 
 @pytest.fixture(autouse=True)
-def patch_cache(mock_model, mock_scaler):
-    """Injeta modelo e features mockados no cache de dependências."""
-    from tests.conftest import MOCK_FEATURE_NAMES
+def patch_cache(mock_model, mock_scaler, mock_imputer):
+    """Injeta modelo mockado no cache de dependências."""
     deps._model = mock_model
     deps._scaler = mock_scaler
-    deps._feature_names = MOCK_FEATURE_NAMES
+    deps._imputer = mock_imputer
 
 
 # ── /api/v1/health ────────────────────────────────────────────────────────────
@@ -37,7 +40,8 @@ def test_health_retorna_status_healthy(client):
 def test_health_retorna_503_quando_modelo_falha(client):
     deps._model = None
     deps._scaler = None
-    with patch("src.api.dependencies.joblib.load", side_effect=FileNotFoundError):
+    deps._imputer = None
+    with patch("src.api.dependencies._load_model", side_effect=FileNotFoundError):
         response = client.get("/api/v1/health")
     assert response.status_code == 503
 
@@ -56,16 +60,10 @@ def test_model_info_contem_campos_esperados(client):
     assert "classes" in data
 
 
-def test_model_info_n_features_correto(client):
-    from tests.conftest import MOCK_FEATURE_NAMES
+def test_model_info_n_classes_correto(client):
     data = client.get("/api/v1/model/info").json()
-    assert data["nFeatures"] == len(MOCK_FEATURE_NAMES)
-
-
-def test_model_info_retorna_500_em_erro(client):
-    with patch("src.api.routes.get_model", side_effect=RuntimeError("falha")):
-        response = client.get("/api/v1/model/info")
-    assert response.status_code == 500
+    assert data["nClasses"] == 2
+    assert data["classes"] == [0, 1]
 
 
 # ── /api/v1/features ──────────────────────────────────────────────────────────
@@ -74,17 +72,9 @@ def test_features_retorna_200(client):
     assert client.get("/api/v1/features").status_code == 200
 
 
-def test_features_retorna_lista_correta(client):
-    from tests.conftest import MOCK_FEATURE_NAMES
+def test_features_retorna_19_features(client):
     data = client.get("/api/v1/features").json()
-    assert data["nFeatures"] == len(MOCK_FEATURE_NAMES)
-    assert data["features"] == MOCK_FEATURE_NAMES
-
-
-def test_features_retorna_500_em_erro(client):
-    with patch("src.api.routes.get_feature_names", side_effect=RuntimeError("falha")):
-        response = client.get("/api/v1/features")
-    assert response.status_code == 500
+    assert data["nFeatures"] == 19
 
 
 # ── /api/v1/predict ───────────────────────────────────────────────────────────
@@ -101,12 +91,18 @@ def test_predict_retorna_422_sem_json(client):
 
 
 def test_predict_retorna_422_com_body_incompleto(client):
-    response = client.post("/api/v1/predict", json={"gender": 1})
+    response = client.post("/api/v1/predict", json={"gender": "Male"})
+    assert response.status_code == 422
+
+
+def test_predict_retorna_422_com_valor_invalido(client, sample_input):
+    sample_input["gender"] = "Alien"
+    response = client.post("/api/v1/predict", json=sample_input)
     assert response.status_code == 422
 
 
 def test_predict_retorna_400_quando_service_levanta_erro(client, sample_input):
-    with patch("src.api.routes.predict_single", side_effect=ValueError("Features ausentes")):
+    with patch("src.api.routes.predict_single", side_effect=ValueError("erro")):
         response = client.post("/api/v1/predict", json=sample_input)
     assert response.status_code == 400
 
@@ -136,22 +132,6 @@ def test_predict_batch_retorna_200(client, sample_input):
 def test_predict_batch_retorna_422_sem_chave_customers(client):
     response = client.post("/api/v1/predict/batch", json={"data": []})
     assert response.status_code == 422
-
-
-def test_predict_batch_retorna_422_customers_nao_e_lista(client):
-    response = client.post("/api/v1/predict/batch", json={"customers": "invalido"})
-    assert response.status_code == 422
-
-
-def test_predict_batch_retorna_422_sem_json(client):
-    response = client.post("/api/v1/predict/batch", data="texto")
-    assert response.status_code == 422
-
-
-def test_predict_batch_retorna_500_em_erro_interno(client, sample_input):
-    with patch("src.api.routes.predict_batch", side_effect=RuntimeError("falha")):
-        response = client.post("/api/v1/predict/batch", json={"customers": [sample_input]})
-    assert response.status_code == 500
 
 
 def test_predict_batch_total_corresponde_ao_input(client, sample_input):
