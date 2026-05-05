@@ -1,10 +1,13 @@
 from unittest.mock import patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.api.app import _resolve_required_api_names, _save_selected_api_names, _train_on_startup, create_app
+from src.api.app import (
+    _resolve_required_api_names,
+    _train_on_startup,
+    create_app,
+)
 from src.prediction.feature_mapping import MODEL_FEATURE_NAMES
 
 

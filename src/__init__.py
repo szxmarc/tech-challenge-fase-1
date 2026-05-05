@@ -1,6 +1,6 @@
 """
 Tech Challenge FIAP — Fase 1
-Solução de predição de churn em telecomunicações com API REST Flask.
+Solução de predição de churn em telecomunicações com API REST FastAPI.
 
 Convenção de nomenclatura:
   - Contrato público da API: camelCase (ex: tenureMonths, hasPartner)
@@ -15,7 +15,7 @@ Módulos:
   prediction    Serviço de inferência e mapeamento de features (service, feature_mapping)
   visualization Geração de gráficos (plots)
   utils         Utilitários gerais (helpers)
-  api           Aplicação Flask REST (app, routes, dependencies)
+  api           Aplicação FastAPI REST (app, routes, schemas, dependencies)
 """
 
 __version__ = "1.0.0"

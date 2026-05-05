@@ -4,8 +4,8 @@
 Funções para extrair e rankear a importância das features.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def get_feature_importance(model, feature_names):

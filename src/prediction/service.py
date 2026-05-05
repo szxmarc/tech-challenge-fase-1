@@ -17,7 +17,6 @@ from src.api.dependencies import get_feature_names, get_model
 from src.data.processor import engineer_features
 from src.prediction.feature_mapping import to_model_input
 
-
 _GENDER_MAP = {"female": 0, "male": 1}
 
 

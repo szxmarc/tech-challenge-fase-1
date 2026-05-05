@@ -8,7 +8,6 @@ e define o handler de erro para rotas não encontradas.
 import logging
 from contextlib import asynccontextmanager
 
-import mlflow
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -23,6 +22,7 @@ logger = logging.getLogger(__name__)
 def _save_selected_api_names(api_names: list[str]) -> None:
     """Persiste os nomes camelCase das features originais necessárias em feature_names.txt."""
     from pathlib import Path
+
     from src.config.settings import DATA_PATHS
     Path(DATA_PATHS["feature_names"]).write_text("\n".join(api_names))
 
@@ -79,7 +79,13 @@ def _train_on_startup() -> None:
         MODEL_CONFIG,
     )
     from src.data.loader import load_raw_data
-    from src.data.processor import encode_features, engineer_features, save_processed_data, select_features, split_and_scale_data
+    from src.data.processor import (
+        encode_features,
+        engineer_features,
+        save_processed_data,
+        select_features,
+        split_and_scale_data,
+    )
     from src.evaluation.metrics import compare_models
     from src.models.trainer import save_mlp_model, save_model, train_logistic_regression, train_mlp
 
@@ -125,8 +131,8 @@ def _train_on_startup() -> None:
 
     # Rastreamento MLflow — não-bloqueante: falha silenciosa se o backend estiver indisponível
     try:
-        import mlflow.sklearn
         import mlflow.pytorch
+        import mlflow.sklearn
 
         mlflow.set_tracking_uri(str(MLFLOW_TRACKING_URI))
         mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)

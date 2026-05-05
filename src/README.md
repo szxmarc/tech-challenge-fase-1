@@ -31,7 +31,7 @@ Encapsula a lógica de treinamento e salvamento de modelos.
 - **trainer.py** → Treina, valida e persiste modelos
 
 ```python
-from src.models.trainer import train_logistic_regression, save_model, load_model
+from src.models.trainer import train_logistic_regression, train_mlp, save_model, save_mlp_model, load_model, load_mlp_model
 ```
 
 ---
@@ -68,17 +68,17 @@ from src.utils.helpers import create_directories, save_json, load_json, log_expe
 
 ---
 
-### **api/** - 🌐 Aplicação Flask REST
+### **api/** - 🌐 Aplicação FastAPI REST
 Expõe o modelo ML através de uma API REST.
-- **app.py** → Configuração e inicialização da Flask app
-- **routes.py** → Definição de endpoints e blueprints
-- **run.py** → Script para rodar a app
+- **app.py** → Configuração e inicialização da FastAPI app
+- **routes.py** → Definição de endpoints e roteadores
+- **schemas.py** → Modelos Pydantic de request/response
+- **dependencies.py** → Dependências compartilhadas (modelo, features)
 
 ```python
 from src.api.app import create_app
 
 app = create_app()
-app.run()
 ```
 
 ---
@@ -111,9 +111,9 @@ Retorna detalhes do modelo treinado.
 **Response:**
 ```json
 {
-  "model_type": "LogisticRegression",
-  "n_features": 20,
-  "n_classes": 2,
+  "modelType": "LogisticRegression",
+  "nFeatures": 20,
+  "nClasses": 2,
   "classes": [0, 1]
 }
 ```
@@ -156,10 +156,10 @@ Content-Type: application/json
 ```json
 {
   "prediction": 1,
-  "prediction_label": "Churn",
-  "probability_no_churn": 0.35,
-  "probability_churn": 0.65,
-  "confidence": 0.65
+  "predictionLabel": "Churn",
+  "probabilityNoChurn": "35.0%",
+  "probabilityChurn": "65.0%",
+  "confidence": "65.0%"
 }
 ```
 
@@ -187,18 +187,20 @@ Content-Type: application/json
   "total": 2,
   "predictions": [
     {
-      "customer_index": 0,
+      "customerIndex": 0,
       "prediction": 1,
-      "prediction_label": "Churn",
-      "probability_no_churn": 0.35,
-      "probability_churn": 0.65
+      "predictionLabel": "Churn",
+      "probabilityNoChurn": "35.0%",
+      "probabilityChurn": "65.0%",
+      "confidence": "65.0%"
     },
     {
-      "customer_index": 1,
+      "customerIndex": 1,
       "prediction": 0,
-      "prediction_label": "Não Churn",
-      "probability_no_churn": 0.75,
-      "probability_churn": 0.25
+      "predictionLabel": "Não Churn",
+      "probabilityNoChurn": "75.0%",
+      "probabilityChurn": "25.0%",
+      "confidence": "75.0%"
     }
   ]
 }
@@ -214,14 +216,9 @@ cd /caminho/para/projeto
 python run_app.py
 ```
 
-### **2. Opção B: Rodar via src/api/run.py**
+### **2. Opção B: Rodar via Python direto**
 ```bash
-python src/api/run.py
-```
-
-### **3. Opção C: Rodar via Python direto**
-```bash
-python -c "from src.api.app import create_app; app = create_app(); app.run()"
+python -c "import uvicorn; uvicorn.run('run_app:app', host='0.0.0.0', port=8000)"
 ```
 
 ---
@@ -316,17 +313,9 @@ python -c "from src.api.app import create_app; print('✅ API OK')"
 ## 📚 Documentação Completa
 
 Para mais detalhes sobre a arquitetura do projeto, veja:
-- [ESTRUTURA_PROJETO.md](../ESTRUTURA_PROJETO.md) - Visão geral completa
 - [README.md](../README.md) - Documentação principal do projeto
 
 ---
 
-**Última Atualização:** Abril 2026  
-**Status:** Estrutura Organizada com API Flask ✅
-- [ESTRUTURA_PROJETO.md](../ESTRUTURA_PROJETO.md) - Visão geral completa
-- [README.md](../README.md) - Documentação principal do projeto
-
----
-
-**Última Atualização:** Abril 2026  
-**Status:** Estrutura Organizada ✅
+**Última Atualização:** Maio 2026  
+**Status:** Estrutura Organizada com API FastAPI ✅

@@ -214,9 +214,9 @@ Classificação binária supervisionada:
 ### Offline Validation
 
 1. **Divisão dos dados:**
-   - Train: 60%
-   - Validation: 20%
+   - Train: 80%
    - Test: 20%
+   - Validação interna (MLP early stopping): 10% do conjunto de treino
    - Estratificação por classe (churn)
 
 2. **Validação cruzada:**
@@ -226,7 +226,7 @@ Classificação binária supervisionada:
 3. **Comparação com baselines:**
    - DummyClassifier (estratificado)
    - Regressão Logística
-   - Árvore de Decisão
+   - MLP PyTorch (modelo de produção)
 
 ### Online Validation (A/B Testing)
 
@@ -246,10 +246,10 @@ Classificação binária supervisionada:
 | Atividade | Duração | Status |
 |-----------|---------|--------|
 | Business Understanding + ML Canvas | 1 semana | ✅ Concluído |
-| EDA + Data Quality Assessment | 2 semanas | 🔄 Em andamento |
-| Feature Engineering | 1 semana | ⏳ Planejado |
-| Baseline Models | 1 semana | ⏳ Planejado |
-| MLflow Setup + Tracking | 3 dias | ⏳ Planejado |
+| EDA + Data Quality Assessment | 2 semanas | ✅ Concluído |
+| Feature Engineering | 1 semana | ✅ Concluído |
+| Baseline Models | 1 semana | ✅ Concluído |
+| MLflow Setup + Tracking | 3 dias | ✅ Concluído |
 
 ---
 
@@ -275,4 +275,4 @@ Classificação binária supervisionada:
 **Documento criado por:** Giovanni de Aguirre Tamanini  
 **Data:** Abril 2026  
 **Versão:** 1.0  
-**Status:** Aprovado para Etapa 1
+**Status:** Projeto Completo — Todas as Etapas Concluídas

@@ -1,5 +1,4 @@
 gender
-isSeniorCitizen
 hasPartner
 hasDependents
 tenureMonths

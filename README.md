@@ -2,225 +2,251 @@
 
 ## Descrição do Projeto
 
-Este projeto desenvolve uma solução end-to-end de Machine Learning para previsão de churn em uma operadora de telecomunicações. O projeto está estruturado seguindo as melhores práticas de ML Engineering, com foco em reprodutibilidade, documentação e rastreamento de experimentos.
+Solução end-to-end de Machine Learning para previsão de churn em uma operadora de telecomunicações.
+O projeto segue boas práticas de ML Engineering, com código modularizado, testes automatizados,
+API REST, rastreamento de experimentos e documentação completa.
 
 ## 🎯 Objetivo de Negócio
 
-Uma operadora de telecomunicações está enfrentando uma taxa acelerada de cancelamento de clientes (churn). Este projeto visa construir um modelo preditivo que classifique clientes com risco de cancelamento, permitindo ações preventivas para reduzir o churn.
+Uma operadora de telecomunicações enfrenta alta taxa de cancelamento de clientes (churn).
+Este projeto constrói um modelo preditivo para classificar clientes em risco de cancelamento,
+viabilizando ações preventivas de retenção.
 
 **Métricas de Sucesso:**
 - **Técnicas**: AUC-ROC ≥ 0.80, Recall ≥ 0.75, F2-Score ≥ 0.70
 - **Negócio**: Valor positivo de retenção (break-even ou lucro)
 
+---
+
 ## Integrantes do Grupo
 
-- **Giovanni de Aguirre Tamanini** (RM371630) - giovanni.tnini@gmail.com
-- **Integrante 2** - [Nome e contato a ser preenchido]
-- **Integrante 3** - [Nome e contato a ser preenchido]
-- **Integrante 4** - [Nome e contato a ser preenchido]
+- **Giovanni de Aguirre Tamanini** (RM371630) - 
+- **Cristiano Lima do Sacramento** (RM3709482) -
+- **Marcelo Santos Souza** (RM370295) - 
+- **Yan Levi Martins Meira** (RM370673)
+
+---
 
 ## 📂 Estrutura do Projeto
 
 ```
-tech_challenge_previsao_churn/
+tech-challenge-fase-1/
 ├── data/
-│   ├── raw/                                    # Dados originais (nunca modificar)
+│   ├── raw/                        # Dataset original (nunca modificar)
 │   │   └── Telco-Customer-Churn.csv
-│   └── processed/                              # Dados processados
-│       ├── baseline/                           # Dados dos modelos baseline
-│
-├── models/                                     # Modelos treinados
-│   ├── baseline/                               # Modelos baseline
-│   │   ├── dummy_classifier/                   # DummyClassifier
-│   │   │   ├── model.joblib
-│   │   │   ├── scaler.joblib
-│   │   │   └── metrics.json
-│   │   └── logistic_regression/                # Regressão Logística
-│   │       ├── model.joblib
-│   │       ├── scaler.joblib
-│   │       └── metrics.json
-│
-├── notebooks/                                  # Notebooks de análise
-│   ├── 01_eda_e_baselines.ipynb               # EDA e modelos baseline
-│
-├── src/                                        # Código modularizado (Etapa 3)
-├── tests/                                      # Testes automatizados (Etapa 3)
-├── docs/                                       # Documentação adicional
-│   └── ML_Canvas.md                            # ML Canvas (planejado)
-├── requirements.txt                            # Dependências do projeto
-├── .gitignore                                  # Arquivos ignorados pelo Git
-└── README.md                                   # Este arquivo
+│   ├── processed/
+│   │   └── baseline/               # Dados processados (gerados no startup)
+│   └── samples/                    # Payloads JSON de exemplo
+├── models/
+│   ├── baseline/
+│   │   ├── dummy_classifier/
+│   │   └── logistic_regression/    # Modelo baseline (model.joblib, scaler.joblib, metrics.json)
+│   ├── mlp/                        # Modelo de produção MLP PyTorch
+│   └── feature_names.txt           # Contrato de features da API (gerado no startup)
+├── notebooks/
+│   └── 01_eda_e_baselines.ipynb
+├── src/
+│   ├── api/                        # FastAPI: app.py, routes.py, schemas.py, dependencies.py
+│   ├── config/                     # settings.py — fonte única de verdade para configurações
+│   ├── data/                       # loader.py, processor.py
+│   ├── models/                     # trainer.py, mlp_torch.py
+│   ├── evaluation/                 # metrics.py, features.py
+│   ├── prediction/                 # service.py, feature_mapping.py
+│   ├── utils/                      # helpers.py
+│   └── visualization/              # plots.py
+├── tests/                          # Suíte pytest (cobertura ≥ 90%)
+│   ├── api/
+│   ├── data/
+│   ├── evaluation/
+│   ├── models/
+│   ├── prediction/
+│   └── utils/
+├── docs/
+│   ├── ml_canvas.md
+│   ├── model_card.md
+│   ├── deploy_architecture.md
+│   └── monitoring_plan.md
+├── reports/
+│   └── model_comparison.json       # Gerado no startup: LR vs MLP
+├── Makefile
+├── pyproject.toml
+├── run_app.py
+└── .gitignore
 ```
+
+---
 
 ## 🚀 Etapas de Desenvolvimento
 
 ### ✅ Etapa 1 - Entendimento e Preparação (CONCLUÍDA)
 
-**Status:** ✅ **COMPLETA**
-
-**Objetivos:**
-- [x] Preencher ML Canvas (stakeholders, métricas de negócio, SLOs)
-- [x] EDA completa: volume, qualidade, distribuição, data readiness
-- [x] Definir métricas técnicas (AUC-ROC, PR-AUC, F1, F2) e métricas de negócio
-- [x] Treinar baselines com DummyClassifier e Regressão Logística
-- [x] Registrar experimentos no MLflow
-
-**Entregável:** 
-- ✅ `notebooks/01_eda_e_baselines.ipynb`
-- ✅ Baselines registrados no MLflow
-- ✅ Documentação completa de features e decisões
+- ML Canvas completo (stakeholders, métricas de negócio, SLOs)
+- EDA completa: volume, qualidade, distribuição, data readiness
+- Métricas técnicas definidas: AUC-ROC, PR-AUC, F1, F2
+- Baselines treinados: DummyClassifier e Regressão Logística
+- Experimentos registrados no MLflow
 
 **Resultados dos Baselines:**
 
-| Modelo | AUC-ROC | F2-Score | Valor de Negócio | Status |
-|--------|---------|----------|------------------|--------|
-| DummyClassifier | 0.516 | 0.291 | -R$ 102.300 | Baseline mínimo |
-| **Regressão Logística** | **0.841** | **0.704** | **+R$ 61.500** | ✅ **Promissor** |
-
-**Principais Insights:**
-- 📊 Dataset balanceado: 26.5% churn vs 73.5% não-churn
-- 🔍 Features mais importantes: `tenure`, `MonthlyCharges`, `Contract_Two year`
-- 💰 Regressão Logística já é lucrativa: +R$ 61.500 (R$ 43,65 por cliente)
-- 🎯 F2-Score de 0.704 atinge a meta de negócio (≥0.70)
-- ✅ AUC-ROC de 0.841 indica excelente capacidade de discriminação (≥0.80)
+| Modelo | AUC-ROC | F2-Score | Valor de Negócio |
+|--------|---------|----------|------------------|
+| DummyClassifier | 0.516 | 0.291 | -R$ 102.300 |
+| **Regressão Logística** | **0.841** | **0.704** | **+R$ 61.500** ✅ |
 
 ---
 
-### 📋 Etapa 2 - Modelagem com Redes Neurais (Planejado)
+### ✅ Etapa 2 - Modelagem com Redes Neurais (CONCLUÍDA)
 
-**Objetivos:**
-- [ ] Construir MLP em PyTorch
-- [ ] Implementar loop de treinamento com early stopping
-- [ ] Comparar MLP vs. baselines
-- [ ] Analisar trade-off de custo
-- [ ] Registrar todos os experimentos no MLflow
-- [ ] Otimização de threshold para maximizar valor de negócio
-
-**Modelos a Implementar:**
-1. Random Forest
-2. XGBoost
-3. MLP (PyTorch)
-4. Análise de Feature Importance (SHAP)
+- MLP implementado em PyTorch com arquitetura (64→32), dropout=0.3
+- Loop de treinamento com early stopping (patience=10)
+- `pos_weight` no BCEWithLogitsLoss para tratamento do desbalanceamento de classes
+- Comparação MLP vs. Regressão Logística com valor de negócio e métricas técnicas
+- Todos os experimentos registrados no MLflow
 
 ---
 
-### Etapa 3 - Engenharia e API (Planejado)
+### ✅ Etapa 3 - Engenharia e API (CONCLUÍDA)
 
-**Objetivos:**
-- [ ] Refatorar código em módulos (`src/`)
-- [ ] Criar pipeline reprodutível
-- [ ] Escrever testes (pytest)
-- [ ] Construir API FastAPI
-- [ ] Adicionar logging estruturado
-- [ ] Configurar pyproject.toml, ruff, Makefile
-
----
-
-### Etapa 4 - Documentação e Entrega Final (Planejado)
-
-**Objetivos:**
-- [ ] Gerar Model Card completo
-- [ ] Documentar arquitetura de deploy
-- [ ] Criar plano de monitoramento
-- [ ] Finalizar README
-- [ ] Gravar vídeo STAR (5 minutos)
-- [ ] (Opcional) Deploy em nuvem
+- Código refatorado em módulos (`src/`) com responsabilidades separadas
+- Pipeline reprodutível executado automaticamente no startup da API
+- Suíte de testes com pytest (cobertura configurada ≥ 90%)
+- API FastAPI com 6 endpoints: `/health`, `/model/info`, `/features`,
+  `/predict`, `/predict/batch`, `/model/comparison`
+- Logging estruturado com módulo `logging` do Python
+- `pyproject.toml` com dependências, ruff e pytest configurados
+- `Makefile` com targets: `install`, `run`, `test`, `lint`, `clean`, `mlflow`
 
 ---
 
-## 🛠️ Bibliotecas e Tecnologias
+### ✅ Etapa 4 - Documentação e Entrega Final (CONCLUÍDA)
 
-### Core ML:
-- **PyTorch** - Construção e treinamento de redes neurais
-- **Scikit-Learn** - Pipelines de pré-processamento e modelos baseline
-- **MLflow** - Tracking de experimentos
-
-### Análise e Visualização:
-- **Pandas, NumPy** - Manipulação e análise de dados
-- **Matplotlib, Seaborn** - Visualização de dados (estilo: `whitegrid`)
-- **Scipy** - Análises estatísticas
-
-### API e Deploy:
-- **FastAPI** - API de inferência (Etapa 3)
+- Model Card completo (`docs/model_card.md`)
+- Arquitetura de deploy documentada (`docs/deploy_architecture.md`)
+- Plano de monitoramento (`docs/monitoring_plan.md`)
+- README atualizado
+- Vídeo STAR (5 minutos) — a ser gravado pelo grupo
 
 ---
 
-## 📦 Setup e Instalação
+## 🛠️ Setup e Instalação
 
 ### Pré-requisitos
 
-- Python 3.10 ou superior
+- Python 3.11 ou superior
 - Git
-- (Opcional) Jupyter Notebook
+- Make (Windows: via [chocolatey](https://chocolatey.org/packages/make) ou Git Bash)
 
 ### Instalação
 
-1. **Clone o repositório:**
-   ```bash
-   git clone [URL_DO_REPOSITORIO]
-   cd tech_challenge_previsao_churn
-   ```
+```bash
+git clone [URL_DO_REPOSITORIO]
+cd tech-challenge-fase-1
 
-2. **Crie um ambiente virtual:**
-   ```bash
-   python -m venv venv
-   
-   # Windows:
-   venv\Scripts\activate
-   
-   # Linux/Mac:
-   source venv/bin/activate
-   ```
+# Instala dependências (produção + dev)
+make install
 
-3. **Instale as dependências:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Ou diretamente com pip:
+pip install -e ".[dev]"
+```
+
+Para notebooks (matplotlib, evidently, jupyter, etc.):
+
+```bash
+make install-notebooks
+```
 
 ---
 
 ## 🎓 Como Executar
 
-### Etapa 1 - Análise Exploratória e Baselines
+### Iniciar a API
 
-1. **Navegue até a pasta de notebooks:**
-   ```bash
-   cd notebooks
-   ```
+```bash
+make run
+# Ou: python run_app.py
+```
 
-2. **Execute o Jupyter Notebook:**
-   ```bash
-   jupyter notebook
-   ```
+A API estará disponível em **http://localhost:8000**  
+Documentação interativa (Swagger): **http://localhost:8000/docs**
 
-3. **Abra e execute:** `01_eda_e_baselines.ipynb`
+> **Nota:** no primeiro start a API executa o pipeline completo de treinamento
+> (carrega dados → engenharia de features → treina LR + MLP → compara → loga no MLflow).
+> Aguarde até ver `Modelos treinados e salvos com sucesso.` nos logs.
 
-   **Estrutura do Notebook:**
-   - Seção 1: Setup e Configuração
-   - Seção 2: Carregamento dos Dados (com dicionário completo)
-   - Seção 3: EDA (análises descritivas, outliers, correlações)
-   - Seção 4: Preparação dos Dados
-   - Seção 5: Definição de Métricas
-   - Seção 6: Modelos Baseline
-   - Seção 7: Comparação de Modelos
-   - Seção 8: Conclusões e Próximos Passos
+### Executar Testes
+
+```bash
+make test
+```
+
+Relatório HTML de cobertura gerado em `reports/coverage/index.html`.
+
+### Verificar Qualidade do Código
+
+```bash
+make lint       # apenas verifica
+make lint-fix   # corrige automaticamente
+```
+
+### Rastreamento de Experimentos (MLflow)
+
+```bash
+make mlflow
+# Acesse: http://localhost:5000
+```
 
 ---
 
-### MLflow Tracking
+## 🌐 Endpoints da API
 
-Para visualizar os experimentos registrados:
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/health` | Saúde básica da aplicação |
+| GET | `/api/v1/health` | Saúde da API + disponibilidade do modelo |
+| GET | `/api/v1/model/info` | Tipo do modelo, nº de features e classes |
+| GET | `/api/v1/features` | Lista de features esperadas (camelCase) |
+| GET | `/api/v1/model/comparison` | Comparativo LR vs MLP em JSON |
+| POST | `/api/v1/predict` | Predição para um único cliente |
+| POST | `/api/v1/predict/batch` | Predição para múltiplos clientes |
+
+**Exemplo de predição (curl):**
 
 ```bash
-mlflow ui
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gender": "male",
+    "isSeniorCitizen": 0,
+    "hasPartner": 1,
+    "hasDependents": 0,
+    "tenureMonths": 24,
+    "hasPhoneService": 1,
+    "hasPaperlessBilling": 1,
+    "monthlyCharges": 75.5,
+    "totalCharges": 1812.0,
+    "multipleLinesNoPhone": 0,
+    "multipleLinesActive": 1,
+    "internetFiberOptic": 1,
+    "internetNone": 0,
+    "onlineSecurityNoInternet": 0,
+    "onlineSecurityActive": 0,
+    "onlineBackupNoInternet": 0,
+    "onlineBackupActive": 1,
+    "deviceProtectionNoInternet": 0,
+    "deviceProtectionActive": 0,
+    "techSupportNoInternet": 0,
+    "techSupportActive": 0,
+    "streamingTvNoInternet": 0,
+    "streamingTvActive": 1,
+    "streamingMoviesNoInternet": 0,
+    "streamingMoviesActive": 1,
+    "contractOneYear": 0,
+    "contractTwoYear": 0,
+    "paymentCreditCardAutomatic": 0,
+    "paymentElectronicCheck": 1,
+    "paymentMailedCheck": 0
+  }'
 ```
-
-Acesse: **http://localhost:5000**
-
-**Experimentos Registrados:**
-- `Telco Churn - Baseline Models`
-  - DummyClassifier (Stratified)
-  - Logistic Regression
 
 ---
 
@@ -229,11 +255,12 @@ Acesse: **http://localhost:5000**
 **Dataset:** Telco Customer Churn (IBM)  
 **Fonte:** [Kaggle - Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
 
-**Características:**
-- **Observações:** 7.043 clientes
-- **Features:** 20 variáveis independentes + 1 target
-- **Tipo:** Classificação binária (Churn: Yes/No)
-- **Balanceamento:** 26.5% churn, 73.5% não-churn
+| Característica | Valor |
+|---|---|
+| Observações | 7.043 clientes |
+| Features | 20 variáveis independentes + 1 target |
+| Tipo | Classificação binária (Churn: Yes/No) |
+| Balanceamento | 26.5% churn, 73.5% não-churn |
 
 **Variáveis Principais:**
 - **Demográficas:** gender, SeniorCitizen, Partner, Dependents
@@ -243,119 +270,42 @@ Acesse: **http://localhost:5000**
 
 ---
 
+## 📚 Documentação Adicional
+
+| Documento | Descrição |
+|---|---|
+| [`docs/ml_canvas.md`](docs/ml_canvas.md) | Canvas de negócio: stakeholders, métricas, SLOs, riscos |
+| [`docs/model_card.md`](docs/model_card.md) | Model Card: arquitetura, avaliação, limitações, uso ético |
+| [`docs/deploy_architecture.md`](docs/deploy_architecture.md) | Arquitetura de deploy, Docker, endpoints, SLOs |
+| [`docs/monitoring_plan.md`](docs/monitoring_plan.md) | Plano de monitoramento, drift, retreinamento |
+
+---
+
 ## ✅ Critérios de Qualidade
 
 - [x] Seeds fixados para reprodutibilidade (`random_state=42`)
 - [x] Validação com split estratificado (80/20)
-- [x] Logging estruturado com MLflow
-- [x] Documentação completa em markdown
-- [x] Prevenção de data leakage
-- [x] Commits significativos e histórico limpo
-- [x] Notebook padronizado seguindo referência do curso
-- [x] **Uso exclusivo de `.joblib` para persistência de modelos**
-- [x] **Estrutura organizada por tipo de modelo e experimento**
-- [x] **Código modular e reutilizável**
-- [x] **Documentação técnica detalhada**
-
----
-
-## 📋 Convenções de Nomenclatura
-
-### Arquivos de Modelos
-- **Modelos scikit-learn/XGBoost:** `model.joblib`
-- **Modelos PyTorch:** `model.pt`
-- **Scalers:** `scaler.joblib`
-- **Métricas:** `metrics.json`
-
-### Diretórios de Experimentos
-- **Formato:** `experiment_XXX` (ex: `experiment_001`, `experiment_002`)
-- Cada experimento contém: modelo, scaler e métricas
-- Melhor modelo de cada tipo fica em `best_model/`
-- Modelo final de produção em `production/`
-
-### Por que `.joblib`?
-- Mais eficiente que pickle para arrays NumPy grandes
-- Padrão recomendado pelo scikit-learn
-- Compressão automática de dados
-- Melhor performance de leitura/escrita
-
----
-
-## 🔄 Como Adicionar Novos Experimentos
-
-### 1. Carregar Dados Processados
-```python
-import joblib
-
-# Carregar dados já preparados
-X_train = joblib.load('data/processed/baseline/X_train_scaled.joblib')
-y_train = joblib.load('data/processed/baseline/y_train.joblib')
-```
-
-### 2. Treinar Modelo
-```python
-from sklearn.ensemble import RandomForestClassifier
-
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
-```
-
-### 3. Salvar Experimento
-```python
-import os
-import json
-
-# Criar diretório do experimento
-exp_dir = 'models/random_forest/experiment_001/'
-os.makedirs(exp_dir, exist_ok=True)
-
-# Salvar modelo e scaler
-joblib.dump(model, f'{exp_dir}/model.joblib')
-joblib.dump(scaler, f'{exp_dir}/scaler.joblib')
-
-# Salvar métricas
-metrics = {'auc_roc': 0.85, 'f2_score': 0.72, ...}
-with open(f'{exp_dir}/metrics.json', 'w') as f:
-    json.dump(metrics, f, indent=2)
-```
-
-### 4. Registrar no MLflow
-```python
-import mlflow
-
-with mlflow.start_run(run_name="random_forest_exp_001"):
-    mlflow.log_params({...})
-    mlflow.log_metrics(metrics)
-    mlflow.sklearn.log_model(model, "model")
-```
-
----
-
-## 📚 Documentação Adicional
-
-- **Notebooks**: Cada notebook contém documentação detalhada inline
-
----
+- [x] Logging estruturado com MLflow + Python `logging`
+- [x] Prevenção de data leakage (scaler ajustado apenas no treino)
+- [x] Código modular com responsabilidades separadas (`src/`)
+- [x] Testes automatizados com cobertura ≥ 90%
+- [x] Linter configurado (ruff, line-length=100, py311)
+- [x] Persistência de modelos com `.joblib`
+- [x] Contrato de features versionado (`models/feature_names.txt`)
 
 ---
 
 ## 📝 Licença
 
-Este projeto foi desenvolvido como parte do Tech Challenge da Fase 1 de Machine Learning Engineering.
+Projeto desenvolvido como parte do Tech Challenge da Fase 1 de Machine Learning Engineering — FIAP.
 
 ---
 
-## 📞 Contato
-
-Para dúvidas ou sugestões, entre em contato com os integrantes do grupo listados acima.
-
----
-
-**Última atualização:** 11 de Abril de 2026  
-**Versão:** 1.2
+**Última atualização:** Maio 2026  
+**Versão:** 2.0
 
 **Changelog:**
-- **v1.2** (11/04/2026): Reestruturação completa do projeto com organização por tipo de modelo, convenções de nomenclatura padronizadas, documentação expandida
-- **v1.1** (09/04/2026): Implementação dos modelos baseline (DummyClassifier e Regressão Logística)
-- **v1.0** (09/04/2026): Setup inicial do projeto e EDA
-
+- **v2.0** (05/2026): Documentação final completa, Makefile, Model Card, plano de monitoramento e arquitetura de deploy adicionados. README atualizado para refletir estado real do projeto.
+- **v1.2** (11/04/2026): Reestruturação completa com organização por tipo de modelo e documentação expandida
+- **v1.1** (09/04/2026): Implementação dos modelos baseline
+- **v1.0** (09/04/2026): Setup inicial e EDA

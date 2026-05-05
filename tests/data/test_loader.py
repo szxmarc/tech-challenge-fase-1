@@ -38,7 +38,6 @@ def test_load_processed_data_levanta_erro_sem_x_train(tmp_path):
 
 def test_load_processed_data_retorna_5_elementos(tmp_path):
     import joblib
-    import numpy as np
     from sklearn.preprocessing import StandardScaler
 
     X = pd.DataFrame({"a": [1, 2], "b": [3, 4]})

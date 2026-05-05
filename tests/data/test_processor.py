@@ -5,7 +5,14 @@ import pandas as pd
 import pytest
 from sklearn.preprocessing import StandardScaler
 
-from src.data.processor import DERIVED_FEATURE_SOURCES, encode_features, engineer_features, save_processed_data, select_features, split_and_scale_data
+from src.data.processor import (
+    DERIVED_FEATURE_SOURCES,
+    encode_features,
+    engineer_features,
+    save_processed_data,
+    select_features,
+    split_and_scale_data,
+)
 
 
 @pytest.fixture
