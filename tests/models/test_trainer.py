@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
-from sklearn.neural_network import MLPClassifier
 
+from src.models.mlp_torch import PyTorchMLPWrapper
 from src.models.trainer import (
     load_mlp_model,
     load_model,
@@ -89,40 +89,47 @@ def test_load_model_levanta_erro_sem_scaler_joblib(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# MLP
+# MLP PyTorch
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
 def dados_mlp():
-    """Dataset maior para suportar early_stopping (validação estratificada)."""
+    """Dataset com 40 amostras para suportar validation split e BatchNorm."""
     rng = np.random.default_rng(42)
     X = pd.DataFrame({"f1": rng.integers(0, 2, 40), "f2": rng.integers(0, 2, 40)})
     y = pd.Series([i % 2 for i in range(40)])
     return X, y
 
 
-def test_train_mlp_retorna_mlp_classifier(dados_mlp):
+def test_train_mlp_retorna_pytorch_wrapper(dados_mlp):
     X, y = dados_mlp
     model = train_mlp(X, y)
-    assert isinstance(model, MLPClassifier)
+    assert isinstance(model, PyTorchMLPWrapper)
 
 
-def test_train_mlp_modelo_esta_ajustado(dados_mlp):
+def test_train_mlp_possui_interface_sklearn(dados_mlp):
     X, y = dados_mlp
     model = train_mlp(X, y)
-    assert hasattr(model, "coefs_")
+    assert hasattr(model, "predict")
+    assert hasattr(model, "predict_proba")
+    assert hasattr(model, "classes_")
+    assert hasattr(model, "feature_names_in_")
 
 
-def test_train_mlp_aplica_sample_weight(dados_mlp):
-    """Garante que o treino usa pesos balanceados por classe."""
-    from unittest.mock import patch, MagicMock
+def test_train_mlp_prediz_apos_treino(dados_mlp):
     X, y = dados_mlp
-    mock_model = MagicMock(spec=MLPClassifier)
-    with patch("src.models.trainer.MLPClassifier", return_value=mock_model):
-        train_mlp(X, y)
-    call_kwargs = mock_model.fit.call_args
-    assert call_kwargs is not None
-    assert "sample_weight" in call_kwargs.kwargs or len(call_kwargs.args) >= 3
+    model = train_mlp(X, y)
+    preds = model.predict(X)
+    assert len(preds) == len(X)
+    assert set(preds).issubset({0, 1})
+
+
+def test_train_mlp_trata_desbalanceamento(dados_mlp):
+    """Garante que o treino funciona com classes desbalanceadas via pos_weight."""
+    X, _ = dados_mlp
+    y_unbalanced = pd.Series([1 if i < 8 else 0 for i in range(40)])
+    model = train_mlp(X, y_unbalanced)
+    assert isinstance(model, PyTorchMLPWrapper)
 
 
 @pytest.fixture

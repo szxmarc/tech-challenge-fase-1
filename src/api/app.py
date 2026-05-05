@@ -8,6 +8,7 @@ e define o handler de erro para rotas não encontradas.
 import logging
 from contextlib import asynccontextmanager
 
+import mlflow
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -62,14 +63,21 @@ def _train_on_startup() -> None:
       2. Cria features derivadas (engenharia de features)
       3. Seleciona features via Random Forest (cobertura ≥ 90% de importância)
       4. Treina Regressão Logística (baseline) nas features selecionadas
-      5. Treina MLP (produção) nas features selecionadas
+      5. Treina MLP PyTorch (produção) nas features selecionadas
       6. Compara os modelos no conjunto de teste e persiste comparison.json
-      7. Persiste feature_names.txt com os nomes camelCase das features originais necessárias
+      7. Registra experimento no MLflow (parâmetros + métricas de ambos os modelos)
+      8. Persiste feature_names.txt com os nomes camelCase das features originais necessárias
     """
     import json
     from pathlib import Path
 
-    from src.config.settings import DATA_PATHS
+    from src.config.settings import (
+        DATA_PATHS,
+        MLFLOW_EXPERIMENT_NAME,
+        MLFLOW_TRACKING_URI,
+        MLP_CONFIG,
+        MODEL_CONFIG,
+    )
     from src.data.loader import load_raw_data
     from src.data.processor import encode_features, engineer_features, save_processed_data, select_features, split_and_scale_data
     from src.evaluation.metrics import compare_models
@@ -99,7 +107,7 @@ def _train_on_startup() -> None:
     lr_model = train_logistic_regression(X_train, y_train)
     save_model(lr_model, scaler)
 
-    logger.info("Treinando modelo de produção (MLP)...")
+    logger.info("Treinando modelo de produção (MLP PyTorch)...")
     mlp_model = train_mlp(X_train, y_train)
     save_mlp_model(mlp_model, scaler)
 
@@ -114,6 +122,41 @@ def _train_on_startup() -> None:
         comparison["models"]["mlp"]["metrics"]["f1Score"],
         comparison["models"]["logisticRegression"]["metrics"]["f1Score"],
     )
+
+    # Rastreamento MLflow — não-bloqueante: falha silenciosa se o backend estiver indisponível
+    try:
+        import mlflow.sklearn
+        import mlflow.pytorch
+
+        mlflow.set_tracking_uri(str(MLFLOW_TRACKING_URI))
+        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+        with mlflow.start_run(run_name="churn_baseline_vs_mlp_pytorch") as run:
+            mlflow.log_params({f"lr_{k}": str(v) for k, v in MODEL_CONFIG.items()})
+            mlflow.log_params({f"mlp_{k}": str(v) for k, v in MLP_CONFIG.items()})
+            logger.info("MLflow | parâmetros registrados | run_id=%s", run.info.run_id)
+
+            for model_name, model_data in comparison["models"].items():
+                for metric, value in model_data["metrics"].items():
+                    mlflow.log_metric(f"{model_name}_{metric}", value)
+            logger.info("MLflow | métricas de teste registradas (LR + MLP)")
+
+            mlflow.sklearn.log_model(lr_model, "logistic_regression")
+            logger.info("MLflow | artefato registrado: logistic_regression")
+
+            mlflow.pytorch.log_model(mlp_model.model, "mlp_pytorch")
+            logger.info("MLflow | artefato registrado: mlp_pytorch")
+
+            mlflow.log_artifact(str(comparison_path), artifact_path="reports")
+            logger.info("MLflow | artefato registrado: reports/model_comparison.json")
+
+            mlflow.set_tag("recommendation", comparison["recommendation"])
+            logger.info(
+                "MLflow | experimento concluído | run_id=%s recomendação=%s",
+                run.info.run_id,
+                comparison["recommendation"],
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("MLflow tracking indisponível, continuando sem rastreamento: %s", exc)
 
     _save_selected_api_names(required_api_names)
     logger.info("Modelos treinados e salvos com sucesso.")

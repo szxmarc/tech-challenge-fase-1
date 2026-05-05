@@ -105,27 +105,24 @@ MODEL_CONFIG = {
     "random_state": 42
 }
 
-# Hiperparâmetros do MLP — arquitetura reduzida para o volume do dataset Telco (~5.600 amostras
-# de treino). A arquitetura anterior (128→64→32) era grande demais, causando overfitting.
+# Hiperparâmetros do MLP PyTorch — arquitetura (64→32) adequada para o volume do dataset
+# Telco (~5.600 amostras de treino).
 #
-# Mudanças em relação à versão anterior e o motivo de cada uma:
-# - hidden_layer_sizes (128,64,32)→(64,32): menos parâmetros para aprender, reduz overfitting
-# - alpha 0.0001→0.01: regularização L2 mais forte, penaliza pesos grandes e generaliza melhor
-# - batch_size 256→64: mais atualizações de gradiente por época, aprendizado mais fino
-# - max_iter 80→200: mais tempo para convergir sem depender só do early stopping
-# - n_iter_no_change 10→15: mais paciência antes de parar, evita interrupção prematura
+# - hidden_sizes (64, 32): camadas ocultas com ReLU + BatchNorm + Dropout
+# - dropout 0.3: regularização para reduzir overfitting
+# - learning_rate 1e-3: taxa padrão do Adam, boa convergência inicial
+# - epochs 100: limite máximo; early stopping interrompe antes se necessário
+# - batch_size 64: atualizações frequentes de gradiente
+# - early_stopping_patience 10: épocas sem melhora na val_loss antes de parar
+# - threshold 0.5: limiar de decisão (pode ser ajustado para maximizar recall)
 MLP_CONFIG = {
-    "hidden_layer_sizes": (64, 32),
-    "activation": "relu",
-    "solver": "adam",
-    "alpha": 0.01,
+    "hidden_sizes": (64, 32),
+    "dropout": 0.3,
+    "learning_rate": 1e-3,
+    "epochs": 100,
     "batch_size": 64,
-    "max_iter": 200,
-    "learning_rate_init": 1e-3,
-    "early_stopping": True,
-    "validation_fraction": 0.1,
-    "n_iter_no_change": 15,
-    "random_state": 42,
+    "early_stopping_patience": 10,
+    "threshold": 0.5,
 }
 
 # Configuração de split treino/teste
