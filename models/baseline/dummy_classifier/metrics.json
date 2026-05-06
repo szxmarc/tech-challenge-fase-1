@@ -1,0 +1,16 @@
+{
+  "model_name": "DummyClassifier (Stratified)",
+  "accuracy": 0.6217175301632364,
+  "precision": 0.2891246684350133,
+  "recall": 0.2914438502673797,
+  "f1_score": 0.29027962716378164,
+  "f2_score": 0.29097704217832354,
+  "auc_roc": 0.5162533260998735,
+  "pr_auc": 0.2723402566824383,
+  "true_negatives": 767,
+  "false_positives": 268,
+  "false_negatives": 265,
+  "true_positives": 109,
+  "total_business_value": -102300,
+  "avg_value_per_customer": -72.60468417317246
+}
